@@ -771,6 +771,8 @@ async function saveNote() {
   const title = $('fTitle').value.trim();
   if (!title) { toast('请填写标题', 'error'); $('fTitle').focus(); return; }
   const content = $('mdInput').value;
+  // 完全空的文件网站会显示 404，至少保留一个换行
+  const body = content.trim() ? content : '\n';
   const changes = [];
   let msg;
   try {
@@ -783,7 +785,7 @@ async function saveNote() {
         if (tree.has(path)) { busy(); toast('这个文件名已经存在，换一个吧', 'error'); return; }
         model.top.push({ title, path });
         msg = `新增页面：${title}`;
-        try { await commitWithSidebar(msg, [{ path, text: content }]); }
+        try { await commitWithSidebar(msg, [{ path, text: body }]); }
         catch (e) { model.top.pop(); throw e; }
         current = { isNew: false, sec: 'top', ci: -1, ni: model.top.length - 1, path, title, original: content };
       } else {
@@ -792,7 +794,7 @@ async function saveNote() {
       const folder = catFolder(cat);
       const path = join(folder, name + '.md');
       if (tree.has(path)) { busy(); toast('这个文件名已经存在，换一个吧', 'error'); return; }
-      changes.push({ path, text: content });
+      changes.push({ path, text: body });
       await readmeAdd(folder, title, path, changes);
       cat.notes.push({ title, path });
       msg = `新增笔记：${title}`;
@@ -803,7 +805,7 @@ async function saveNote() {
     } else if (current.sec === 'top') {
       const n = model.top[current.ni];
       const oldTitle = n.title;
-      changes.push({ path: current.path, text: content });
+      changes.push({ path: current.path, text: body });
       n.title = title;
       msg = `更新页面：${title}`;
       try {
@@ -828,7 +830,7 @@ async function saveNote() {
         const newPath = join(toFolder, base);
         if (base === 'README.md') { busy(); toast('分类的概览页不能移动到别的分类', 'error'); return; }
         if (tree.has(newPath)) { busy(); toast(`目标分类里已有同名文件 ${base}`, 'error'); return; }
-        changes.push({ path: newPath, text: content });
+        changes.push({ path: newPath, text: body });
         if (tree.has(oldPath)) changes.push({ path: oldPath, delete: true });
         await readmeRemove(fromFolder, oldLink, changes);
         await readmeAdd(toFolder, title, newPath, changes);
@@ -839,7 +841,7 @@ async function saveNote() {
         catch (e) { model = parseSidebar(snapshot); renderTree(); refreshCatSelect(fromCi); throw e; }
         current = { isNew: false, sec: 'cat', ci: toCi, ni: toCat.notes.length - 1, path: newPath, title, original: content };
       } else {
-        changes.push({ path: oldPath, text: content });
+        changes.push({ path: oldPath, text: body });
         msg = `更新笔记：${title}`;
         if (oldTitle !== title) {
           await readmeRename(fromFolder, oldLink, oldTitle, title, changes);
@@ -877,7 +879,7 @@ async function deleteNote() {
     busy('正在删除…');
     const changes = [];
     // 首页文件是网站入口，不能真删，清空内容即可
-    if (current.path === 'README.md') changes.push({ path: 'README.md', text: '' });
+    if (current.path === 'README.md') changes.push({ path: 'README.md', text: '\n' });
     else if (tree.has(current.path)) changes.push({ path: current.path, delete: true });
     if (current.sec === 'top') {
       model.top.splice(current.ni, 1);
@@ -1205,7 +1207,7 @@ $('btnWipe').onclick = async () => {
   model = { top: [], cats: [] };
   try {
     busy('正在清空…');
-    await commitWithSidebar('清空全部内容', [...del.map(p => ({ path: p, delete: true })), { path: 'README.md', text: '' }]);
+    await commitWithSidebar('清空全部内容', [...del.map(p => ({ path: p, delete: true })), { path: 'README.md', text: '\n' }]);
     renderTree(); refreshCatSelect(); showPanel('welcome');
     toast('已清空，网站现在是空的');
   } catch (e) { model = parseSidebar(snapshot); renderTree(); toast(e.message, 'error'); }
