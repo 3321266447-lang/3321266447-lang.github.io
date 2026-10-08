@@ -59,9 +59,28 @@ window.SITE_CONFIG = {
       },
       plugins: [
         // 以 / 开头的图片按网站根目录解析（docsify 默认会拼到当前笔记所在文件夹）
-        function (hook) {
+        function (hook, vm) {
+          var homeEmpty = false;
           hook.afterEach(function (html) {
+            // 空页面显示空白，而不是 404
+            // （翻页插件会先加一个空的容器，判断时去掉它）
+            if (!html.replace(/<div class="docsify-pagination-container"><\/div>/g, '').replace(/\s/g, '')) {
+              homeEmpty = vm.route.path === '/';
+              return '<div class="empty-page"></div>' + html;
+            }
+            homeEmpty = false;
             return html.replace(/<img src="[^"]*" data-origin="(\/(?!\/)[^"]*)"/g, '<img src="$1" data-origin="$1"');
+          });
+          // 首页被删除（内容为空）时，自动打开左侧目录的第一篇
+          hook.doneEach(function () {
+            if (!homeEmpty) return;
+            var tries = 0;
+            (function go() {
+              // 目录可能比正文晚加载，等它出现
+              var first = document.querySelector('.sidebar-nav a[href^="#/"]:not([href="#/"])');
+              if (first) { if (vm.route.path === '/') location.replace(first.getAttribute('href')); return; }
+              if (++tries < 30) setTimeout(go, 100);
+            })();
           });
         }
       ]
