@@ -122,7 +122,7 @@ aside {
 #workspace { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: auto; }
 #welcome { margin: auto; text-align: center; color: var(--muted); padding: 40px 16px; }
 #welcome .big { font-size: 48px; }
-#editor, #files { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 16px; gap: 12px; }
+#editor, #files, #settings { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 16px; gap: 12px; }
 .fields { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; }
 .toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .toolbar .sep { flex: 1; }
@@ -189,7 +189,7 @@ aside {
   #btnToggleTree { display: inline-block !important; }
   .fields { grid-template-columns: 1fr; }
   .panes.mode-split .md-body { display: none; }
-  #editor, #files { padding: 12px; }
+  #editor, #files, #settings { padding: 12px; }
 }
 #btnToggleTree { display: none; }
 </style>
@@ -235,6 +235,7 @@ aside {
     <button id="btnToggleTree">☰ 目录</button>
     <span class="brand">📚 笔记管理后台</span>
     <span id="pubStatus"></span>
+    <button id="btnSettings">⚙️ 网站设置</button>
     <a id="lnkSite" target="_blank" rel="noopener"><button>🌐 查看网站</button></a>
     <button id="btnTheme" title="切换明暗">🌓</button>
     <button id="btnLogout">退出</button>
@@ -289,6 +290,23 @@ aside {
         <div id="dropZone">点击选择文件，或把文件拖到这里上传<br><span style="font-size:12px">单个文件最大 25 MB · 文件是公开的，任何人都能下载</span></div>
         <input type="file" id="fileInput" multiple hidden>
         <div id="fileList" class="file-list"></div>
+      </div>
+
+      <div id="settings" hidden>
+        <div class="row"><h2 style="margin:0;font-size:18px;flex:1">⚙️ 网站设置</h2><button id="btnCloseSettings">关闭</button></div>
+        <div class="file-list" style="padding:16px;display:grid;gap:14px;max-width:560px">
+          <div><label for="sName">网站名称（显示在左上角，可以带表情，可留空）</label><input type="text" id="sName"></div>
+          <div><label for="sTitle">浏览器标签页标题</label><input type="text" id="sTitle"></div>
+          <div><label for="sColor">主题色（链接、高亮的颜色）</label>
+            <div class="row"><input type="color" id="sColorPick" style="width:48px;height:38px;padding:2px"><input type="text" id="sColor" placeholder="#3b82f6"></div></div>
+          <div><label for="sSearch">搜索框提示文字</label><input type="text" id="sSearch"></div>
+          <div class="row" style="justify-content:flex-end"><button class="primary" id="btnSaveSettings">💾 保存设置</button></div>
+        </div>
+        <div class="file-list" style="padding:16px;max-width:560px;border-color:var(--danger)">
+          <div style="font-weight:600;color:var(--danger)">⚠️ 危险操作</div>
+          <p class="muted" style="margin:6px 0 12px">删除全部分类、笔记、固定页面、图片和附件，首页内容清空，网站只剩一个空框架。网站设置和这个后台会保留。</p>
+          <button class="danger solid" id="btnWipe">🗑 清空全部内容</button>
+        </div>
       </div>
     </section>
   </div>
@@ -561,10 +579,16 @@ const setChange = (changes, p, text) => {
 function renderTree() {
   const L = $('treeList');
   let h = '';
-  h += `<div class="tree-sec"><div class="tree-head" data-act="toggle" data-key="__top"><span class="caret">${collapsed.has('__top') ? '▶' : '▼'}</span><span class="name">🔖 固定页面</span></div>`;
+  h += `<div class="tree-sec"><div class="tree-head" data-act="toggle" data-key="__top"><span class="caret">${collapsed.has('__top') ? '▶' : '▼'}</span><span class="name">📌 固定页面</span>
+    <span class="ops"><button class="icon" data-act="pageNew" title="新建固定页面">＋</button></span></div>`;
   if (!collapsed.has('__top')) {
+    if (!model.top.length) h += `<div class="tree-empty">（没有固定页面）</div>`;
     model.top.forEach((n, i) => {
-      h += `<div class="tree-item${isActive('top', 0, i) ? ' active' : ''}" data-act="open" data-sec="top" data-ni="${i}"><span class="name">${esc(n.title)}</span></div>`;
+      h += `<div class="tree-item${isActive('top', 0, i) ? ' active' : ''}" data-act="open" data-sec="top" data-ni="${i}"><span class="name">${esc(n.title)}</span>
+        <span class="ops">
+          <button class="icon" data-act="topUp" data-ni="${i}" title="上移"${i === 0 ? ' disabled' : ''}>↑</button>
+          <button class="icon" data-act="topDown" data-ni="${i}" title="下移"${i === model.top.length - 1 ? ' disabled' : ''}>↓</button>
+        </span></div>`;
     });
   }
   h += '</div>';
@@ -613,6 +637,14 @@ $('treeList').addEventListener('click', async e => {
   } else if (act === 'noteIn') {
     if (!(await confirmLeave())) return;
     newNote(ci);
+  } else if (act === 'pageNew') {
+    if (!(await confirmLeave())) return;
+    newNote('top');
+  } else if (act === 'topUp' || act === 'topDown') {
+    const j = act === 'topUp' ? ni - 1 : ni + 1;
+    [model.top[ni], model.top[j]] = [model.top[j], model.top[ni]];
+    if (current && current.sec === 'top' && !current.isNew) { if (current.ni === ni) current.ni = j; else if (current.ni === j) current.ni = ni; }
+    afterReorder();
   } else if (act === 'catUp' || act === 'catDown') {
     const j = act === 'catUp' ? ci - 1 : ci + 1;
     [model.cats[ci], model.cats[j]] = [model.cats[j], model.cats[ci]];
@@ -648,6 +680,7 @@ function showPanel(name) {
   $('welcome').hidden = name !== 'welcome';
   $('editor').hidden = name !== 'editor';
   $('files').hidden = name !== 'files';
+  $('settings').hidden = name !== 'settings';
   if (name !== 'editor') { current = null; renderTree(); }
   if (matchMedia('(max-width: 760px)').matches && name !== 'welcome') $('aside').classList.add('collapsed');
 }
@@ -658,11 +691,15 @@ $('btnToggleTree').onclick = () => $('aside').classList.toggle('collapsed');
 let catOptions = [];
 function refreshCatSelect(sel) {
   const s = $('fCat');
-  const obj = sel != null ? model.cats[sel] : catOptions[+s.value];
+  let obj;
+  if (sel === 'top' || (sel == null && s.value === 'top')) obj = 'top';
+  else obj = sel != null ? model.cats[sel] : catOptions[+s.value];
   catOptions = model.cats.slice();
-  s.innerHTML = model.cats.map((c, i) => `<option value="${i}">${esc(c.name)}</option>`).join('');
+  s.innerHTML = model.cats.map((c, i) => `<option value="${i}">${esc(c.name)}</option>`).join('')
+    + '<option value="top">📌 固定页面（不属于任何分类）</option>';
+  if (obj === 'top') { s.value = 'top'; return; }
   const i = obj ? model.cats.indexOf(obj) : -1;
-  s.value = String(i >= 0 ? i : 0);
+  s.value = i >= 0 ? String(i) : (model.cats.length ? '0' : 'top');
 }
 const dirty = () => current && ($('mdInput').value !== current.original || $('fTitle').value.trim() !== current.title
   || (current.sec === 'cat' && +$('fCat').value !== current.ci));
@@ -690,20 +727,20 @@ function template(title, cat) {
   return `# ${title || '笔记标题'}\n\n<p class="note-meta">📅 ${today()} · 🏷 ${catName}</p>\n\n## 一句话总结\n\n> 用一句话说清楚这篇笔记讲了什么。\n\n## 核心要点\n\n1. 要点一\n2. 要点二\n3. 要点三\n\n## 详细内容\n\n在这里展开写……\n\n## 我的思考\n\n- \n\n## 参考资料\n\n- \n`;
 }
 
+// ci：分类序号，或 'top' 表示固定页面
 function newNote(ci) {
-  if (!model.cats.length) { toast('请先新建一个分类', 'error'); return; }
-  if (ci == null || isNaN(ci)) ci = 0;
-  current = { isNew: true, sec: 'cat', ci, ni: -1, path: null, title: '', original: '' };
+  if (ci !== 'top' && (ci == null || isNaN(ci) || !model.cats[ci])) ci = model.cats.length ? 0 : 'top';
+  current = { isNew: true, sec: ci === 'top' ? 'top' : 'cat', ci: ci === 'top' ? -1 : ci, ni: -1, path: null, title: '', original: '' };
   $('fTitle').value = '';
   refreshCatSelect(ci);
   $('fCat').disabled = false;
-  $('fName').value = 'note-' + stamp();
+  $('fName').value = (ci === 'top' ? 'page-' : 'note-') + stamp();
   $('fName').disabled = false;
   $('fName').parentElement.hidden = false;
-  $('mdInput').value = template('', model.cats[ci]);
+  $('mdInput').value = ci === 'top' ? '# 页面标题\n\n' : template('', model.cats[ci]);
   current.original = $('mdInput').value;
   $('btnDelNote').hidden = true;
-  $('editorHint').textContent = '新笔记 · 保存后会自动加到左侧目录';
+  $('editorHint').textContent = '新内容 · 保存后会自动加到左侧目录';
   showPanel('editor'); renderTree(); renderPreview();
   $('fTitle').focus();
 }
@@ -716,13 +753,13 @@ async function openNote(sec, ci, ni) {
     const text = tree.has(path) ? await getText(path) : '';
     current = { isNew: false, sec, ci: sec === 'top' ? -1 : ci, ni, path, title: n.title, original: text };
     $('fTitle').value = n.title;
-    refreshCatSelect(sec === 'top' ? 0 : ci);
+    refreshCatSelect(sec === 'top' ? 'top' : ci);
     $('fCat').disabled = sec === 'top';
     $('fName').value = path;
     $('fName').disabled = true;
     $('fName').parentElement.hidden = false;
     $('mdInput').value = text;
-    $('btnDelNote').hidden = sec === 'top' && path === 'README.md';
+    $('btnDelNote').hidden = false;
     $('editorHint').textContent = tree.has(path) ? `文件：${path}` : `文件 ${path} 还不存在，保存后会新建`;
     showPanel('editor'); renderTree(); renderPreview();
   } catch (e) { toast(e.message, 'error'); }
@@ -740,7 +777,16 @@ async function saveNote() {
     busy('正在保存并发布…');
     if (current.isNew) {
       let name = $('fName').value.trim().replace(/\.md$/i, '');
-      if (!/^[\w\-一-龥]+$/.test(name)) { busy(); toast('文件名只能用字母、数字、中文、- 和 _', 'error'); return; }
+      if (!/^[\w\-一-龥]+$/.test(name) || /^(readme|_sidebar|index|admin)$/i.test(name)) { busy(); toast('文件名只能用字母、数字、中文、- 和 _（不能用 README、index 等保留名）', 'error'); return; }
+      if ($('fCat').value === 'top') {
+        const path = name + '.md';
+        if (tree.has(path)) { busy(); toast('这个文件名已经存在，换一个吧', 'error'); return; }
+        model.top.push({ title, path });
+        msg = `新增页面：${title}`;
+        try { await commitWithSidebar(msg, [{ path, text: content }]); }
+        catch (e) { model.top.pop(); throw e; }
+        current = { isNew: false, sec: 'top', ci: -1, ni: model.top.length - 1, path, title, original: content };
+      } else {
       const ci = +$('fCat').value;
       const cat = model.cats[ci];
       const folder = catFolder(cat);
@@ -753,6 +799,7 @@ async function saveNote() {
       try { await commitWithSidebar(msg, changes); }
       catch (e) { cat.notes.pop(); throw e; }
       current = { isNew: false, sec: 'cat', ci, ni: cat.notes.length - 1, path, title, original: content };
+      }
     } else if (current.sec === 'top') {
       const n = model.top[current.ni];
       const oldTitle = n.title;
@@ -766,6 +813,7 @@ async function saveNote() {
       current.title = title; current.original = content;
     } else {
       const fromCi = current.ci, ni = current.ni;
+      if ($('fCat').value === 'top') { busy(); toast('已有笔记不能改成固定页面，可以点「📌 固定页面」旁的 ＋ 新建一个', 'error'); return; }
       const toCi = +$('fCat').value;
       const fromCat = model.cats[fromCi];
       const note = fromCat.notes[ni];
@@ -806,9 +854,9 @@ async function saveNote() {
     }
     $('fCat').disabled = current.sec === 'top';
     $('fName').value = current.path; $('fName').disabled = true;
-    $('btnDelNote').hidden = current.sec === 'top' && current.path === 'README.md';
+    $('btnDelNote').hidden = false;
     $('editorHint').textContent = `文件：${current.path}`;
-    renderTree(); refreshCatSelect(current.sec === 'top' ? 0 : current.ci);
+    renderTree(); refreshCatSelect(current.sec === 'top' ? 'top' : current.ci);
     toast('✅ 已保存，网站约 1 分钟后更新');
   } catch (e) { toast(e.message, 'error'); }
   finally { busy(); }
@@ -818,7 +866,9 @@ async function deleteNote() {
   if (!current || current.isNew) return;
   const r = await ask({
     title: '删除笔记',
-    html: `<p>确定删除「<b>${esc(current.title)}</b>」吗？</p><p class="muted" style="font-size:12px">文件 ${esc(current.path)} 会从网站移除。（GitHub 会保留历史记录，必要时可以找回）</p>`,
+    html: `<p>确定删除「<b>${esc(current.title)}</b>」吗？</p><p class="muted" style="font-size:12px">${current.path === 'README.md'
+      ? '首页会从左侧目录移除，首页内容清空（网站打开时会显示空白页）。'
+      : `文件 ${esc(current.path)} 会从网站移除。`}（GitHub 会保留历史记录，必要时可以找回）</p>`,
     okText: '删除', danger: true,
   });
   if (!r) return;
@@ -826,7 +876,9 @@ async function deleteNote() {
   try {
     busy('正在删除…');
     const changes = [];
-    if (tree.has(current.path)) changes.push({ path: current.path, delete: true });
+    // 首页文件是网站入口，不能真删，清空内容即可
+    if (current.path === 'README.md') changes.push({ path: 'README.md', text: '' });
+    else if (tree.has(current.path)) changes.push({ path: current.path, delete: true });
     if (current.sec === 'top') {
       model.top.splice(current.ni, 1);
     } else {
@@ -838,7 +890,7 @@ async function deleteNote() {
     await commitWithSidebar(`删除笔记：${current.title}`, changes);
     showPanel('welcome');
     toast('已删除');
-  } catch (e) { model = parseSidebar(snapshot); renderTree(); refreshCatSelect(current && current.ci >= 0 ? current.ci : 0); toast(e.message, 'error'); }
+  } catch (e) { model = parseSidebar(snapshot); renderTree(); refreshCatSelect(current && current.ci >= 0 ? current.ci : 'top'); toast(e.message, 'error'); }
   finally { busy(); }
 }
 
@@ -1093,8 +1145,71 @@ $('fileList').addEventListener('click', async e => {
 // ---------- 按钮 ----------
 $('btnNewNote').onclick = async () => {
   if (!(await confirmLeave())) return;
-  const ci = current && current.sec === 'cat' ? current.ci : 0;
+  const ci = current && current.sec === 'cat' ? current.ci : (model.cats.length ? 0 : 'top');
   newNote(ci);
+};
+
+// ---------- 网站设置 ----------
+const CFG_RE = /\/\* SITE_CONFIG_START \*\/[\s\S]*?\/\* SITE_CONFIG_END \*\//;
+let siteCfg = null;
+$('btnSettings').onclick = async () => {
+  if (!(await confirmLeave())) return;
+  try {
+    busy('正在读取设置…');
+    const html = await getText('index.html');
+    const m = html.match(CFG_RE);
+    if (!m) throw new Error('index.html 里找不到设置区块，无法在后台修改');
+    const json = m[0].replace(/^\/\* SITE_CONFIG_START \*\/\s*window\.SITE_CONFIG\s*=\s*/, '').replace(/;\s*\/\* SITE_CONFIG_END \*\/$/, '');
+    siteCfg = JSON.parse(json);
+    $('sName').value = siteCfg.name || '';
+    $('sTitle').value = siteCfg.title || '';
+    $('sColor').value = siteCfg.themeColor || '#3b82f6';
+    $('sColorPick').value = /^#[0-9a-f]{6}$/i.test($('sColor').value) ? $('sColor').value : '#3b82f6';
+    $('sSearch').value = siteCfg.searchPlaceholder || '';
+    showPanel('settings');
+  } catch (e) { toast(e.message, 'error'); }
+  finally { busy(); }
+};
+$('sColorPick').oninput = () => $('sColor').value = $('sColorPick').value;
+$('sColor').oninput = () => { if (/^#[0-9a-f]{6}$/i.test($('sColor').value)) $('sColorPick').value = $('sColor').value; };
+$('btnCloseSettings').onclick = () => showPanel('welcome');
+$('btnSaveSettings').onclick = async () => {
+  const color = $('sColor').value.trim();
+  if (color && !/^#[0-9a-f]{3,8}$/i.test(color)) { toast('主题色格式不对，应该像 #3b82f6', 'error'); return; }
+  const cfg = { ...siteCfg, name: $('sName').value.trim(), title: $('sTitle').value.trim(), themeColor: color || '#3b82f6', searchPlaceholder: $('sSearch').value.trim() };
+  try {
+    busy('正在保存设置…');
+    const html = await getText('index.html');
+    if (!CFG_RE.test(html)) throw new Error('index.html 里找不到设置区块，无法保存');
+    const block = '/* SITE_CONFIG_START */\nwindow.SITE_CONFIG = ' + JSON.stringify(cfg, null, 2).replace(/</g, '\\u003c') + ';\n/* SITE_CONFIG_END */';
+    await commit('修改网站设置', [{ path: 'index.html', text: html.replace(CFG_RE, () => block) }]);
+    await loadTree();
+    siteCfg = cfg;
+    toast('✅ 设置已保存，网站约 1 分钟后更新');
+  } catch (e) { toast(e.message, 'error'); }
+  finally { busy(); }
+};
+$('btnWipe').onclick = async () => {
+  const keep = new Set(['index.html', 'admin.html', '.nojekyll', SIDEBAR, 'README.md']);
+  const del = [...tree.keys()].filter(p => !keep.has(p));
+  const v = await ask({
+    title: '清空全部内容',
+    html: `<p>将删除 <b>${model.cats.length}</b> 个分类、<b>${del.length}</b> 个文件，并清空首页和左侧目录。</p>
+      <p class="muted" style="font-size:12px">GitHub 会保留历史记录，但后台里无法恢复。</p>`,
+    fields: [{ id: 'confirm', label: '请输入「清空」两个字确认', placeholder: '清空' }],
+    okText: '全部清空', danger: true,
+  });
+  if (!v) return;
+  if (v.confirm !== '清空') { toast('输入不一致，已取消', 'error'); return; }
+  const snapshot = serialize(model);
+  model = { top: [], cats: [] };
+  try {
+    busy('正在清空…');
+    await commitWithSidebar('清空全部内容', [...del.map(p => ({ path: p, delete: true })), { path: 'README.md', text: '' }]);
+    renderTree(); refreshCatSelect(); showPanel('welcome');
+    toast('已清空，网站现在是空的');
+  } catch (e) { model = parseSidebar(snapshot); renderTree(); toast(e.message, 'error'); }
+  finally { busy(); }
 };
 $('btnNewCat').onclick = newCategory;
 $('btnSave').onclick = saveNote;
