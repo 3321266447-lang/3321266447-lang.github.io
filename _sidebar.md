@@ -1,11 +1,6 @@
 - [🏠 首页](/)
 - [✍️ 如何添加笔记](guide.md)
 
-- 💻 编程基础
-  - [概览](coding/README.md)
-  - [Python 入门](coding/python-basics.md)
-  - [Git 常用命令](coding/git-commands.md)
-
 - 🌍 英语学习
   - [概览](english/README.md)
   - [常用表达](english/phrases.md)
