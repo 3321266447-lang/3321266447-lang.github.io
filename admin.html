@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>笔记管理后台</title>
+<title>实践笔记 · 管理后台</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233b82f6'/%3E%3Cpath d='M9.5 10.5h13M9.5 16h8' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M9.5 21.5l3 3 6.5-6.5' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.2.8/400.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.2.8/600.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc@5.2.8/400.css">
@@ -77,7 +78,11 @@ button.icon svg.ic { width: 15px; height: 15px; }
   :root:not([data-theme="light"]) .only-dark { display: inline; }
 }
 .brand, .brand-title, .panel-title { display: inline-flex; align-items: center; gap: 8px; }
-.brand svg.ic, .brand-title svg.ic { width: 20px; height: 20px; color: var(--accent); }
+svg.logo { width: 26px; height: 26px; flex-shrink: 0; }
+svg.logo rect { fill: var(--accent); }
+svg.logo path { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.brand-title svg.logo { width: 30px; height: 30px; }
+.brand .sub, .brand-title .sub { font-weight: 400; color: var(--muted); font-size: .8em; margin-left: 2px; }
 .panel-title { margin: 0; font-size: 17px; font-weight: 600; flex: 1; }
 .panel-title svg.ic { width: 18px; height: 18px; }
 input[type=text], input[type=password], select, textarea {
@@ -238,7 +243,7 @@ aside {
 <!-- 登录 -->
 <div id="login" hidden>
   <div class="card">
-    <h1 class="brand-title"><i data-i="book"></i>笔记管理后台</h1>
+    <h1 class="brand-title"><i data-i="logo"></i>实践笔记<span class="sub">管理后台</span></h1>
     <p class="muted">第一次使用需要一个 GitHub「访问令牌」，后台用它来帮你保存笔记。</p>
     <details>
       <summary>怎么获取令牌？（只需要做一次）</summary>
@@ -270,7 +275,7 @@ aside {
 <div id="app" hidden>
   <header>
     <button id="btnToggleTree" class="square" title="目录"><i data-i="menu"></i></button>
-    <span class="brand"><i data-i="book"></i>笔记管理后台</span>
+    <span class="brand"><i data-i="logo"></i>实践笔记<span class="sub">管理后台</span></span>
     <span id="pubStatus"></span>
     <button id="btnSettings"><i data-i="sliders"></i>网站设置</button>
     <a id="lnkSite" target="_blank" rel="noopener"><button><i data-i="external"></i>查看网站</button></a>
@@ -415,7 +420,8 @@ const ICONS = {
   pencil: '<path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
   link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
 };
-const ic = name => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+const LOGO = '<svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8"/><path d="M9.5 10.5h13M9.5 16h8"/><path d="M9.5 21.5l3 3 6.5-6.5"/></svg>';
+const ic = name => name === 'logo' ? LOGO : `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 function hydrateIcons(root) {
   root.querySelectorAll('i[data-i]').forEach(el => {
     const tmp = document.createElement('span');
