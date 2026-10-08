@@ -91,6 +91,8 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
+/* 搜索插件会注入 .sidebar { padding-top: 0 }，这里提高优先级 */
+body .sidebar { padding-top: 24px; }
 .sidebar > * { flex-shrink: 0; }
 .sidebar > h1 {
   order: -1;
@@ -104,12 +106,11 @@ body {
   display: inline-flex; align-items: center; gap: 10px;
   color: var(--text) !important; text-decoration: none;
 }
-.sidebar > h1 a::before {
-  content: ""; width: 20px; height: 20px; flex-shrink: 0;
-  background-color: var(--accent);
-  -webkit-mask: var(--i-book) center / contain no-repeat;
-  mask: var(--i-book) center / contain no-repeat;
-}
+/* Logo：主题色圆角方块 + 白色笔记线和对勾 */
+.site-logo { width: 28px; height: 28px; flex-shrink: 0; display: block; }
+.site-logo rect { fill: var(--accent); }
+.site-logo path { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.site-name { font-size: 18px; font-weight: 700; letter-spacing: .04em; }
 
 /* 搜索框：只有一圈边框，聚焦时变色 */
 .search {
@@ -503,7 +504,8 @@ body.close .content { left: 0; }
 
 /* ---------- 手机 ---------- */
 @media screen and (max-width: 768px) {
-  .sidebar { left: calc(-1 * var(--side-w)); padding-top: 64px; }
+  .sidebar { left: calc(-1 * var(--side-w)); }
+  body .sidebar { padding-top: 64px; }
   body.close .sidebar { transform: translateX(var(--side-w)); box-shadow: 8px 0 30px rgba(0, 0, 0, .15); }
   body.close .content { transform: translateX(var(--side-w)); }
   .content { left: 0; padding-top: 56px; }
