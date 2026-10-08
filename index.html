@@ -14,7 +14,6 @@
   <script>
 /* SITE_CONFIG_START */
 window.SITE_CONFIG = {
-  "name": "我的学习笔记",
   "title": "我的学习笔记",
   "themeColor": "#3b82f6",
   "searchPlaceholder": "搜索笔记…"
@@ -78,7 +77,7 @@ window.SITE_CONFIG = {
   <script>
     var site = window.SITE_CONFIG || {};
     window.$docsify = {
-      name: site.name || '',
+      name: '实践笔记',  // 固定的网站名称，后台不能修改
       loadSidebar: true,
       subMaxLevel: 2,
       auto2top: true,
