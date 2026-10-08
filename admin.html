@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>笔记管理后台</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.2.8/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.2.8/600.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc@5.2.8/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc@5.2.8/600.css">
 <style>
 :root {
   --bg: #f6f7f9;
@@ -39,21 +43,43 @@
 html, body { height: 100%; margin: 0; }
 body {
   background: var(--bg); color: var(--text);
-  font: 14px/1.6 -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  font: 14px/1.6 "Inter", "Noto Sans SC", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 [hidden] { display: none !important; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   border: 1px solid var(--border); background: var(--panel); border-radius: 8px;
   padding: 6px 12px; cursor: pointer; white-space: nowrap;
+  transition: border-color .15s, background-color .15s, color .15s;
 }
 button:hover { border-color: var(--accent); }
-button:disabled { opacity: .5; cursor: not-allowed; }
+button:disabled { opacity: .4; cursor: not-allowed; }
 button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+button.primary:hover { filter: brightness(1.06); }
 button.danger { color: var(--danger); }
+button.danger:hover { border-color: var(--danger); }
 button.danger.solid { background: var(--danger); color: #fff; border-color: var(--danger); }
-button.icon { padding: 2px 7px; border-color: transparent; background: transparent; color: var(--muted); }
-button.icon:hover { color: var(--text); border-color: var(--border); }
+button.square { padding: 0; width: 34px; height: 34px; }
+button.icon { padding: 4px; border-color: transparent; background: transparent; color: var(--muted); border-radius: 6px; }
+button.icon:hover:not(:disabled) { color: var(--text); background: var(--bg); border-color: transparent; }
+button.icon:disabled { opacity: .25; }
+button.icon.danger:hover:not(:disabled) { color: var(--danger); }
+/* 线条图标 */
+svg.ic { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+button.icon svg.ic { width: 15px; height: 15px; }
+.only-dark { display: none; }
+:root[data-theme="dark"] .only-light { display: none; }
+:root[data-theme="dark"] .only-dark { display: inline; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .only-light { display: none; }
+  :root:not([data-theme="light"]) .only-dark { display: inline; }
+}
+.brand, .brand-title, .panel-title { display: inline-flex; align-items: center; gap: 8px; }
+.brand svg.ic, .brand-title svg.ic { width: 20px; height: 20px; color: var(--accent); }
+.panel-title { margin: 0; font-size: 17px; font-weight: 600; flex: 1; }
+.panel-title svg.ic { width: 18px; height: 18px; }
 input[type=text], input[type=password], select, textarea {
   width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
   background: var(--panel); outline: none;
@@ -100,7 +126,12 @@ aside {
 }
 .tree-head:hover { background: var(--bg); }
 .tree-head .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tree-head .caret { width: 14px; color: var(--muted); font-size: 10px; }
+.tree-head .caret { display: inline-flex; color: var(--muted); transition: transform .15s; }
+.tree-head .caret svg.ic { width: 14px; height: 14px; }
+.tree-head .caret.open { transform: rotate(90deg); }
+.tree-head .kind { display: inline-flex; color: var(--muted); margin: 0 4px 0 2px; }
+.tree-head .kind svg.ic { width: 15px; height: 15px; }
+.tree-head .ops, .tree-item .ops { gap: 1px; }
 .tree-item {
   display: flex; align-items: center; padding: 3px 6px 3px 24px; border-radius: 6px; cursor: pointer;
 }
@@ -121,7 +152,13 @@ aside {
 
 #workspace { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: auto; }
 #welcome { margin: auto; text-align: center; color: var(--muted); padding: 40px 16px; }
-#welcome .big { font-size: 48px; }
+#welcome .big svg.ic { width: 44px; height: 44px; stroke-width: 1.4; }
+#pubStatus { display: inline-flex; align-items: center; gap: 6px; }
+#pubStatus::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+#pubStatus:empty::before { display: none; }
+#dropZone { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+#dropZone svg.ic { width: 26px; height: 26px; margin-bottom: 4px; stroke-width: 1.5; }
+.file-row > svg.ic { color: var(--muted); }
 #editor, #files, #settings { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 16px; gap: 12px; }
 .fields { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; }
 .toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
@@ -131,8 +168,8 @@ aside {
 .seg button.on { background: var(--accent-soft); color: var(--accent); }
 .panes { flex: 1; display: flex; gap: 12px; min-height: 360px; }
 .panes textarea {
-  flex: 1; resize: none; font-family: ui-monospace, Consolas, "Courier New", monospace;
-  font-size: 13.5px; line-height: 1.7; min-height: 360px;
+  flex: 1; resize: none; font-family: "Cascadia Code", "JetBrains Mono", Consolas, "Noto Sans SC", "Microsoft YaHei", monospace;
+  font-size: 14px; line-height: 1.8; min-height: 360px; padding: 12px 14px;
 }
 .panes .md-body {
   flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 8px;
@@ -148,6 +185,8 @@ aside {
 .md-body code { background: var(--code-bg); padding: 1px 4px; border-radius: 4px; }
 .md-body pre code { padding: 0; }
 .md-body blockquote { margin: 0; padding-left: 12px; border-left: 3px solid var(--accent); color: var(--muted); }
+.md-body .hint { padding: 10px 14px; border-radius: 8px; background: var(--accent-soft); }
+.md-body .hint.warn { background: var(--danger-soft); }
 
 #dropZone {
   border: 2px dashed var(--border); border-radius: 12px; padding: 28px; text-align: center;
@@ -186,7 +225,7 @@ aside {
   .main { flex-direction: column; }
   aside { width: auto; border-right: 0; border-bottom: 1px solid var(--border); max-height: 45vh; }
   aside.collapsed #treeList, aside.collapsed .aside-foot, aside.collapsed #orderBar { display: none !important; }
-  #btnToggleTree { display: inline-block !important; }
+  #btnToggleTree { display: inline-flex !important; }
   .fields { grid-template-columns: 1fr; }
   .panes.mode-split .md-body { display: none; }
   #editor, #files, #settings { padding: 12px; }
@@ -199,7 +238,7 @@ aside {
 <!-- 登录 -->
 <div id="login" hidden>
   <div class="card">
-    <h1>📚 笔记管理后台</h1>
+    <h1 class="brand-title"><i data-i="book"></i>笔记管理后台</h1>
     <p class="muted">第一次使用需要一个 GitHub「访问令牌」，后台用它来帮你保存笔记。</p>
     <details>
       <summary>怎么获取令牌？（只需要做一次）</summary>
@@ -207,7 +246,7 @@ aside {
         <li>打开 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub 新建令牌页面</a>（要先登录 <b id="ownerHint"></b>）</li>
         <li><b>Token name</b> 随便填，比如 <code>笔记后台</code>；<b>Expiration</b> 选有效期（可选 1 年）</li>
         <li><b>Repository access</b> 选 <code>Only select repositories</code>，再选 <code id="repoHint"></code></li>
-        <li>在 <b>Permissions</b> 里点 <b>＋</b> 添加 <code>Contents</code>，设为 <b>Read and write</b></li>
+        <li>在 <b>Permissions</b> 里点 <b>+</b> 添加 <code>Contents</code>，设为 <b>Read and write</b></li>
         <li>点页面底部 <b>Generate token</b>，复制生成的 <code>github_pat_…</code> 粘贴到下面</li>
       </ol>
     </details>
@@ -230,28 +269,28 @@ aside {
 <!-- 主界面 -->
 <div id="app" hidden>
   <header>
-    <button id="btnToggleTree">☰ 目录</button>
-    <span class="brand">📚 笔记管理后台</span>
+    <button id="btnToggleTree" class="square" title="目录"><i data-i="menu"></i></button>
+    <span class="brand"><i data-i="book"></i>笔记管理后台</span>
     <span id="pubStatus"></span>
-    <button id="btnSettings">⚙️ 网站设置</button>
-    <a id="lnkSite" target="_blank" rel="noopener"><button>🌐 查看网站</button></a>
-    <button id="btnTheme" title="切换明暗">🌓</button>
-    <button id="btnLogout">退出</button>
+    <button id="btnSettings"><i data-i="sliders"></i>网站设置</button>
+    <a id="lnkSite" target="_blank" rel="noopener"><button><i data-i="external"></i>查看网站</button></a>
+    <button id="btnTheme" class="square" title="切换明暗"><i data-i="sun" class="only-light"></i><i data-i="moon" class="only-dark"></i></button>
+    <button id="btnLogout" class="square" title="退出"><i data-i="logout"></i></button>
   </header>
   <div class="main">
     <aside id="aside">
       <div class="aside-actions">
-        <button class="primary" id="btnNewNote">＋ 新笔记</button>
-        <button id="btnNewCat">＋ 新分类</button>
+        <button class="primary" id="btnNewNote"><i data-i="plus"></i>新笔记</button>
+        <button id="btnNewCat"><i data-i="folderPlus"></i>新分类</button>
       </div>
       <div id="treeList"></div>
       <div id="orderBar" hidden><span>目录顺序已调整</span><button id="btnUndoOrder">撤销</button><button class="primary" id="btnSaveOrder">保存</button></div>
-      <div class="aside-foot"><button id="btnFiles">📎 附件 / 图片管理</button></div>
+      <div class="aside-foot"><button id="btnFiles"><i data-i="paperclip"></i>附件 / 图片管理</button></div>
     </aside>
     <section id="workspace">
       <div id="welcome">
-        <div class="big">📝</div>
-        <p>从左边选一篇笔记来编辑，<br>或者点「＋ 新笔记」开始写。</p>
+        <div class="big"><i data-i="fileText"></i></div>
+        <p>从左边选一篇笔记来编辑，<br>或者点「新笔记」开始写。</p>
       </div>
 
       <div id="editor" hidden>
@@ -261,9 +300,9 @@ aside {
           <div><label for="fName">文件名</label><input type="text" id="fName" placeholder="英文或拼音"></div>
         </div>
         <div class="toolbar">
-          <button id="btnInsImg">🖼 插入图片</button>
-          <button id="btnInsFile">📎 插入附件</button>
-          <button id="btnInsTpl">📋 套用模板</button>
+          <button id="btnInsImg"><i data-i="image"></i>插入图片</button>
+          <button id="btnInsFile"><i data-i="paperclip"></i>插入附件</button>
+          <button id="btnInsTpl"><i data-i="layout"></i>套用模板</button>
           <span class="sep"></span>
           <span class="seg" id="viewSeg">
             <button data-mode="edit">编辑</button>
@@ -276,34 +315,34 @@ aside {
           <div class="md-body" id="preview"></div>
         </div>
         <div class="editor-foot">
-          <button class="danger" id="btnDelNote">🗑 删除</button>
+          <button class="danger" id="btnDelNote"><i data-i="trash"></i>删除</button>
           <span class="hint" id="editorHint"></span>
           <button id="btnCancel">关闭</button>
-          <button class="primary" id="btnSave">💾 保存并发布</button>
+          <button class="primary" id="btnSave"><i data-i="send"></i>保存并发布</button>
         </div>
       </div>
 
       <div id="files" hidden>
-        <div class="row"><h2 style="margin:0;font-size:18px;flex:1">📎 附件 / 图片管理</h2><button id="btnCloseFiles">关闭</button></div>
-        <div id="dropZone">点击选择文件，或把文件拖到这里上传<br><span style="font-size:12px">单个文件最大 25 MB · 文件是公开的，任何人都能下载</span></div>
+        <div class="row"><h2 class="panel-title"><i data-i="paperclip"></i>附件 / 图片管理</h2><button id="btnCloseFiles">关闭</button></div>
+        <div id="dropZone"><i data-i="upload"></i><div>点击选择文件，或把文件拖到这里上传</div><span style="font-size:12px">单个文件最大 25 MB · 文件是公开的，任何人都能下载</span></div>
         <input type="file" id="fileInput" multiple hidden>
         <div id="fileList" class="file-list"></div>
       </div>
 
       <div id="settings" hidden>
-        <div class="row"><h2 style="margin:0;font-size:18px;flex:1">⚙️ 网站设置</h2><button id="btnCloseSettings">关闭</button></div>
+        <div class="row"><h2 class="panel-title"><i data-i="sliders"></i>网站设置</h2><button id="btnCloseSettings">关闭</button></div>
         <div class="file-list" style="padding:16px;display:grid;gap:14px;max-width:560px">
-          <div><label for="sName">网站名称（显示在左上角，可以带表情，可留空）</label><input type="text" id="sName"></div>
+          <div><label for="sName">网站名称（显示在左上角，可留空）</label><input type="text" id="sName"></div>
           <div><label for="sTitle">浏览器标签页标题</label><input type="text" id="sTitle"></div>
           <div><label for="sColor">主题色（链接、高亮的颜色）</label>
             <div class="row"><input type="color" id="sColorPick" style="width:48px;height:38px;padding:2px"><input type="text" id="sColor" placeholder="#3b82f6"></div></div>
           <div><label for="sSearch">搜索框提示文字</label><input type="text" id="sSearch"></div>
-          <div class="row" style="justify-content:flex-end"><button class="primary" id="btnSaveSettings">💾 保存设置</button></div>
+          <div class="row" style="justify-content:flex-end"><button class="primary" id="btnSaveSettings"><i data-i="check"></i>保存设置</button></div>
         </div>
         <div class="file-list" style="padding:16px;max-width:560px;border-color:var(--danger)">
-          <div style="font-weight:600;color:var(--danger)">⚠️ 危险操作</div>
+          <div class="panel-title" style="font-size:14px;color:var(--danger)"><i data-i="alert"></i>危险操作</div>
           <p class="muted" style="margin:6px 0 12px">删除全部分类、笔记、固定页面、图片和附件，首页内容清空，网站只剩一个空框架。网站设置和这个后台会保留。</p>
-          <button class="danger solid" id="btnWipe">🗑 清空全部内容</button>
+          <button class="danger solid" id="btnWipe"><i data-i="trash"></i>清空全部内容</button>
         </div>
       </div>
     </section>
@@ -347,6 +386,47 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, v); } catch {} },
   del(k) { try { localStorage.removeItem(k); } catch {} },
 };
+
+// ---------- 线条图标（24×24，描边） ----------
+const ICONS = {
+  book: '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2zM22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  sliders: '<path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/>',
+  external: '<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  folder: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+  folderPlus: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="M12 10v6M9 13h6"/>',
+  paperclip: '<path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l8.6-8.6a4 4 0 0 1 5.7 5.7l-8.6 8.6a2 2 0 0 1-2.8-2.8l8.5-8.5"/>',
+  fileText: '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',
+  file: '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z"/><path d="M14 2v6h6"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+  layout: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
+  trash: '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>',
+  send: '<path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  alert: '<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
+  pin: '<path d="M12 17v5M9 10.8a2 2 0 0 1-1.1 1.8l-1.8.9A2 2 0 0 0 5 15.2V17h14v-1.8a2 2 0 0 0-1.1-1.8l-1.8-.9a2 2 0 0 1-1.1-1.8V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+  chevron: '<path d="m9 18 6-6-6-6"/>',
+  up: '<path d="m18 15-6-6-6 6"/>',
+  down: '<path d="m6 9 6 6 6-6"/>',
+  pencil: '<path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+};
+const ic = name => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+function hydrateIcons(root) {
+  root.querySelectorAll('i[data-i]').forEach(el => {
+    const tmp = document.createElement('span');
+    tmp.innerHTML = ic(el.dataset.i);
+    const svg = tmp.firstChild;
+    if (el.className) svg.classList.add(...el.className.split(/\s+/).filter(Boolean));
+    el.replaceWith(svg);
+  });
+}
+hydrateIcons(document);
 
 let token = null;
 let tree = new Map();      // path -> {sha, size}
@@ -492,7 +572,7 @@ let watchId = 0;
 async function watchPages(changes) {
   const id = ++watchId;
   const el = $('pubStatus');
-  el.className = ''; el.textContent = '⏳ 网站发布中…';
+  el.className = ''; el.textContent = '网站发布中…';
   const probe = changes.find(c => c.text != null && c.path !== SIDEBAR) || changes.find(c => c.text != null)
     || changes.find(c => c.base64 != null) || changes[0];
   if (!probe) return;
@@ -507,10 +587,10 @@ async function watchPages(changes) {
       if (probe.delete) live = res.status === 404;
       else if (probe.text != null) live = res.ok && norm(await res.text()) === norm(probe.text);
       else live = res.ok;
-      if (live) { el.className = 'ok'; el.textContent = '✅ 网站已更新'; return; }
+      if (live) { el.className = 'ok'; el.textContent = '网站已更新'; return; }
     } catch {}
   }
-  if (id === watchId) el.textContent = '⏳ 发布比较慢，过几分钟刷新网站看看';
+  if (id === watchId) el.textContent = '发布比较慢，过几分钟刷新网站看看';
 }
 
 // ---------- 目录（_sidebar.md）解析 ----------
@@ -584,15 +664,16 @@ const setChange = (changes, p, text) => {
 function renderTree() {
   const L = $('treeList');
   let h = '';
-  h += `<div class="tree-sec"><div class="tree-head" data-act="toggle" data-key="__top"><span class="caret">${collapsed.has('__top') ? '▶' : '▼'}</span><span class="name">📌 固定页面</span>
-    <span class="ops"><button class="icon" data-act="pageNew" title="新建固定页面">＋</button></span></div>`;
+  const caret = closed => `<span class="caret${closed ? '' : ' open'}">${ic('chevron')}</span>`;
+  h += `<div class="tree-sec"><div class="tree-head" data-act="toggle" data-key="__top">${caret(collapsed.has('__top'))}<span class="kind">${ic('pin')}</span><span class="name">固定页面</span>
+    <span class="ops"><button class="icon" data-act="pageNew" title="新建固定页面">${ic('plus')}</button></span></div>`;
   if (!collapsed.has('__top')) {
     if (!model.top.length) h += `<div class="tree-empty">（没有固定页面）</div>`;
     model.top.forEach((n, i) => {
       h += `<div class="tree-item${isActive('top', 0, i) ? ' active' : ''}" data-act="open" data-sec="top" data-ni="${i}"><span class="name">${esc(n.title)}</span>
         <span class="ops">
-          <button class="icon" data-act="topUp" data-ni="${i}" title="上移"${i === 0 ? ' disabled' : ''}>↑</button>
-          <button class="icon" data-act="topDown" data-ni="${i}" title="下移"${i === model.top.length - 1 ? ' disabled' : ''}>↓</button>
+          <button class="icon" data-act="topUp" data-ni="${i}" title="上移"${i === 0 ? ' disabled' : ''}>${ic('up')}</button>
+          <button class="icon" data-act="topDown" data-ni="${i}" title="下移"${i === model.top.length - 1 ? ' disabled' : ''}>${ic('down')}</button>
         </span></div>`;
     });
   }
@@ -601,13 +682,13 @@ function renderTree() {
     const key = 'c' + ci + c.name;
     const closed = collapsed.has(key);
     h += `<div class="tree-sec"><div class="tree-head" data-act="toggle" data-key="${esc(key)}">
-      <span class="caret">${closed ? '▶' : '▼'}</span><span class="name" title="${esc(c.name)}">${esc(c.name)}</span>
+      ${caret(closed)}<span class="kind">${ic('folder')}</span><span class="name" title="${esc(c.name)}">${esc(c.name)}</span>
       <span class="ops">
-        <button class="icon" data-act="noteIn" data-ci="${ci}" title="在这个分类新建笔记">＋</button>
-        <button class="icon" data-act="catUp" data-ci="${ci}" title="上移分类"${ci === 0 ? ' disabled' : ''}>↑</button>
-        <button class="icon" data-act="catDown" data-ci="${ci}" title="下移分类"${ci === model.cats.length - 1 ? ' disabled' : ''}>↓</button>
-        <button class="icon" data-act="catRename" data-ci="${ci}" title="重命名分类">✎</button>
-        <button class="icon" data-act="catDel" data-ci="${ci}" title="删除分类">🗑</button>
+        <button class="icon" data-act="noteIn" data-ci="${ci}" title="在这个分类新建笔记">${ic('plus')}</button>
+        <button class="icon" data-act="catUp" data-ci="${ci}" title="上移分类"${ci === 0 ? ' disabled' : ''}>${ic('up')}</button>
+        <button class="icon" data-act="catDown" data-ci="${ci}" title="下移分类"${ci === model.cats.length - 1 ? ' disabled' : ''}>${ic('down')}</button>
+        <button class="icon" data-act="catRename" data-ci="${ci}" title="重命名分类">${ic('pencil')}</button>
+        <button class="icon danger" data-act="catDel" data-ci="${ci}" title="删除分类">${ic('trash')}</button>
       </span></div>`;
     if (!closed) {
       if (!c.notes.length) h += `<div class="tree-empty">（还没有笔记）</div>`;
@@ -615,8 +696,8 @@ function renderTree() {
         h += `<div class="tree-item${isActive('cat', ci, ni) ? ' active' : ''}" data-act="open" data-sec="cat" data-ci="${ci}" data-ni="${ni}">
           <span class="name" title="${esc(n.path)}">${esc(n.title)}</span>
           <span class="ops">
-            <button class="icon" data-act="noteUp" data-ci="${ci}" data-ni="${ni}" title="上移"${ni === 0 ? ' disabled' : ''}>↑</button>
-            <button class="icon" data-act="noteDown" data-ci="${ci}" data-ni="${ni}" title="下移"${ni === c.notes.length - 1 ? ' disabled' : ''}>↓</button>
+            <button class="icon" data-act="noteUp" data-ci="${ci}" data-ni="${ni}" title="上移"${ni === 0 ? ' disabled' : ''}>${ic('up')}</button>
+            <button class="icon" data-act="noteDown" data-ci="${ci}" data-ni="${ni}" title="下移"${ni === c.notes.length - 1 ? ' disabled' : ''}>${ic('down')}</button>
           </span></div>`;
       });
     }
@@ -701,7 +782,7 @@ function refreshCatSelect(sel) {
   else obj = sel != null ? model.cats[sel] : catOptions[+s.value];
   catOptions = model.cats.slice();
   s.innerHTML = model.cats.map((c, i) => `<option value="${i}">${esc(c.name)}</option>`).join('')
-    + '<option value="top">📌 固定页面（不属于任何分类）</option>';
+    + '<option value="top">固定页面（不属于任何分类）</option>';
   if (obj === 'top') { s.value = 'top'; return; }
   const i = obj ? model.cats.indexOf(obj) : -1;
   s.value = i >= 0 ? String(i) : (model.cats.length ? '0' : 'top');
@@ -729,7 +810,7 @@ function stamp() {
 }
 function template(title, cat) {
   const catName = cat ? cat.name.replace(/^[^\p{L}\p{N}]+/u, '') : '';
-  return `# ${title || '笔记标题'}\n\n<p class="note-meta">📅 ${today()} · 🏷 ${catName}</p>\n\n## 一句话总结\n\n> 用一句话说清楚这篇笔记讲了什么。\n\n## 核心要点\n\n1. 要点一\n2. 要点二\n3. 要点三\n\n## 详细内容\n\n在这里展开写……\n\n## 我的思考\n\n- \n\n## 参考资料\n\n- \n`;
+  return `# ${title || '笔记标题'}\n\n<p class="note-meta">${today()}${catName ? ' · ' + catName : ''}</p>\n\n## 一句话总结\n\n> 用一句话说清楚这篇笔记讲了什么。\n\n## 核心要点\n\n1. 要点一\n2. 要点二\n3. 要点三\n\n## 详细内容\n\n在这里展开写……\n\n## 我的思考\n\n- \n\n## 参考资料\n\n- \n`;
 }
 
 // ci：分类序号，或 'top' 表示固定页面
@@ -820,7 +901,7 @@ async function saveNote() {
       current.title = title; current.original = content;
     } else {
       const fromCi = current.ci, ni = current.ni;
-      if ($('fCat').value === 'top') { busy(); toast('已有笔记不能改成固定页面，可以点「📌 固定页面」旁的 ＋ 新建一个', 'error'); return; }
+      if ($('fCat').value === 'top') { busy(); toast('已有笔记不能改成固定页面，可以点「固定页面」旁的 + 新建一个', 'error'); return; }
       const toCi = +$('fCat').value;
       const fromCat = model.cats[fromCi];
       const note = fromCat.notes[ni];
@@ -864,7 +945,7 @@ async function saveNote() {
     $('btnDelNote').hidden = false;
     $('editorHint').textContent = `文件：${current.path}`;
     renderTree(); refreshCatSelect(current.sec === 'top' ? 'top' : current.ci);
-    toast('✅ 已保存，网站约 1 分钟后更新');
+    toast('已保存，网站约 1 分钟后更新');
   } catch (e) { toast(e.message, 'error'); }
   finally { busy(); }
 }
@@ -906,7 +987,6 @@ async function newCategory() {
   const v = await ask({
     title: '新建分类',
     fields: [
-      { id: 'emoji', label: '图标（一个表情，可留空）', value: '📁' },
       { id: 'name', label: '分类名称', placeholder: '例如：数学' },
       { id: 'folder', label: '文件夹名（英文或拼音）', placeholder: '例如：math', help: '笔记文件会放在这个文件夹里，之后不能改' },
     ],
@@ -918,7 +998,7 @@ async function newCategory() {
   if ([...tree.keys()].some(p => p.startsWith(v.folder + '/')) || model.cats.some(c => catFolder(c) === v.folder)) {
     toast('这个文件夹名已被使用，换一个吧', 'error'); return;
   }
-  const name = (v.emoji ? v.emoji + ' ' : '') + v.name;
+  const name = v.name.replace(/[\r\n]/g, ' ');
   const readme = join(v.folder, 'README.md');
   const cat = { name, folder: v.folder, notes: [{ title: '概览', path: readme }] };
   model.cats.push(cat);
@@ -933,7 +1013,7 @@ async function newCategory() {
 
 async function renameCategory(ci) {
   const c = model.cats[ci];
-  const v = await ask({ title: '重命名分类', fields: [{ id: 'name', label: '新名称（可以带表情）', value: c.name }], okText: '保存' });
+  const v = await ask({ title: '重命名分类', fields: [{ id: 'name', label: '新名称', value: c.name }], okText: '保存' });
   if (!v || !v.name || v.name === c.name) return;
   const old = c.name;
   c.name = v.name.replace(/[\r\n]/g, ' ');
@@ -973,7 +1053,12 @@ let previewTimer;
 function renderPreview() {
   clearTimeout(previewTimer);
   previewTimer = setTimeout(() => {
-    const html = DOMPurify.sanitize(marked.parse($('mdInput').value || ''));
+    // 网站支持的提示块写法：?> 提示，!> 注意
+    const md = ($('mdInput').value || '').split('\n').map(l => {
+      const m = l.match(/^([?!])>\s?(.*)$/);
+      return m ? `<p class="hint${m[1] === '!' ? ' warn' : ''}">${marked.parseInline(m[2])}</p>` : l;
+    }).join('\n');
+    const html = DOMPurify.sanitize(marked.parse(md));
     const box = $('preview');
     box.innerHTML = html;
     // 刚上传的图片网站可能还没更新，预览时直接从仓库读取
@@ -1048,7 +1133,7 @@ async function uploadFiles(fileList, dir) {
     }
     await commit(`上传文件：${done.map(d => d.path.split('/').pop()).join(', ')}`, changes);
     await loadTree();
-    toast(`✅ 已上传 ${done.length} 个文件`);
+    toast(`已上传 ${done.length} 个文件`);
     return done;
   } catch (e) {
     await loadTree().catch(() => {});
@@ -1058,7 +1143,7 @@ async function uploadFiles(fileList, dir) {
 }
 const linkFor = d => {
   const url = '/' + d.path.split('/').map(encodeURIComponent).join('/');
-  return d.isImg ? `![${d.name}](${url})` : `[📎 ${d.name}](${url} ':ignore')`;
+  return d.isImg ? `![${d.name}](${url})` : `[${d.name}](${url} ':ignore')`;
 };
 
 $('btnInsImg').onclick = () => $('imgPicker').click();
@@ -1107,7 +1192,7 @@ function renderFiles() {
   const total = [...tree.values()].reduce((s, x) => s + (x.size || 0), 0);
   $('fileList').innerHTML = (list.length ? list.map(([p, x]) => `
     <div class="file-row">
-      <span>${p.startsWith('images/') ? '🖼' : '📄'}</span>
+      ${ic(p.startsWith('images/') ? 'image' : 'file')}
       <span class="name" title="${esc(p)}">${esc(p)}</span>
       <span class="size">${fmtSize(x.size || 0)}</span>
       <button class="icon" data-act="copy" data-p="${esc(p)}" title="复制插入代码">复制链接</button>
@@ -1192,7 +1277,7 @@ $('btnSaveSettings').onclick = async () => {
     await commit('修改网站设置', [{ path: 'index.html', text: html.replace(CFG_RE, () => block) }]);
     await loadTree();
     siteCfg = cfg;
-    toast('✅ 设置已保存，网站约 1 分钟后更新');
+    toast('设置已保存，网站约 1 分钟后更新');
   } catch (e) { toast(e.message, 'error'); }
   finally { busy(); }
 };
