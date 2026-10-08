@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>笔记管理后台</title>
+<style>
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --text: #1f2328;
+  --muted: #6b7280;
+  --border: #e3e6ea;
+  --accent: #3b82f6;
+  --accent-text: #ffffff;
+  --accent-soft: #e8f0fe;
+  --danger: #dc2626;
+  --danger-soft: #fdecec;
+  --ok: #16a34a;
+  --code-bg: #f3f4f6;
+  --shadow: 0 8px 30px rgba(0,0,0,.12);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1115; --panel: #171a21; --text: #e6e8eb; --muted: #9aa3ae;
+    --border: #2a2f39; --accent: #60a5fa; --accent-text: #0b1220; --accent-soft: #1c2a40;
+    --danger: #f87171; --danger-soft: #3a1d1d; --ok: #4ade80; --code-bg: #20242c;
+    --shadow: 0 8px 30px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1115; --panel: #171a21; --text: #e6e8eb; --muted: #9aa3ae;
+  --border: #2a2f39; --accent: #60a5fa; --accent-text: #0b1220; --accent-soft: #1c2a40;
+  --danger: #f87171; --danger-soft: #3a1d1d; --ok: #4ade80; --code-bg: #20242c;
+  --shadow: 0 8px 30px rgba(0,0,0,.5);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 14px/1.6 -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+}
+[hidden] { display: none !important; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button {
+  border: 1px solid var(--border); background: var(--panel); border-radius: 8px;
+  padding: 6px 12px; cursor: pointer; white-space: nowrap;
+}
+button:hover { border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+button.danger { color: var(--danger); }
+button.danger.solid { background: var(--danger); color: #fff; border-color: var(--danger); }
+button.icon { padding: 2px 7px; border-color: transparent; background: transparent; color: var(--muted); }
+button.icon:hover { color: var(--text); border-color: var(--border); }
+input[type=text], input[type=password], select, textarea {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--panel); outline: none;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+a { color: var(--accent); }
+
+/* login */
+#login { min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+  padding: 28px; width: 100%; max-width: 560px; box-shadow: var(--shadow);
+}
+.card h1 { margin: 0 0 6px; font-size: 22px; }
+.card ol { padding-left: 20px; margin: 12px 0; }
+.card ol li { margin: 6px 0; }
+.card code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.err { color: var(--danger); margin-top: 8px; min-height: 1.4em; }
+details summary { cursor: pointer; color: var(--accent); }
+
+/* app */
+#app { height: 100%; display: flex; flex-direction: column; }
+header {
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+  background: var(--panel); border-bottom: 1px solid var(--border); flex-wrap: wrap;
+}
+header .brand { font-weight: 600; font-size: 16px; margin-right: auto; }
+#pubStatus { font-size: 12px; color: var(--muted); }
+#pubStatus.ok { color: var(--ok); }
+.main { flex: 1; display: flex; min-height: 0; }
+aside {
+  width: 300px; flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; min-height: 0;
+}
+.aside-actions { display: flex; gap: 6px; padding: 12px; border-bottom: 1px solid var(--border); }
+.aside-actions button { flex: 1; }
+#treeList { flex: 1; overflow: auto; padding: 8px 6px 16px; }
+.tree-sec { margin-top: 6px; }
+.tree-head {
+  display: flex; align-items: center; gap: 2px; padding: 4px 6px; border-radius: 6px;
+  font-weight: 600; cursor: pointer; user-select: none;
+}
+.tree-head:hover { background: var(--bg); }
+.tree-head .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree-head .caret { width: 14px; color: var(--muted); font-size: 10px; }
+.tree-item {
+  display: flex; align-items: center; padding: 3px 6px 3px 24px; border-radius: 6px; cursor: pointer;
+}
+.tree-item:hover { background: var(--bg); }
+.tree-item.active { background: var(--accent-soft); color: var(--accent); }
+.tree-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree-head .ops, .tree-item .ops { display: none; }
+.tree-head:hover .ops, .tree-item:hover .ops, .tree-item.active .ops { display: flex; }
+@media (hover: none) { .tree-head .ops, .tree-item .ops { display: flex; } }
+.tree-empty { padding: 3px 6px 3px 24px; color: var(--muted); font-size: 12px; }
+#orderBar {
+  padding: 10px 12px; border-top: 1px solid var(--border); background: var(--accent-soft);
+  display: flex; align-items: center; gap: 8px; font-size: 13px;
+}
+#orderBar span { flex: 1; }
+.aside-foot { padding: 12px; border-top: 1px solid var(--border); }
+.aside-foot button { width: 100%; }
+
+#workspace { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: auto; }
+#welcome { margin: auto; text-align: center; color: var(--muted); padding: 40px 16px; }
+#welcome .big { font-size: 48px; }
+#editor, #files { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 16px; gap: 12px; }
+.fields { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; }
+.toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.toolbar .sep { flex: 1; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; }
+.seg button.on { background: var(--accent-soft); color: var(--accent); }
+.panes { flex: 1; display: flex; gap: 12px; min-height: 360px; }
+.panes textarea {
+  flex: 1; resize: none; font-family: ui-monospace, Consolas, "Courier New", monospace;
+  font-size: 13.5px; line-height: 1.7; min-height: 360px;
+}
+.panes .md-body {
+  flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 8px;
+  padding: 4px 18px; background: var(--panel); min-height: 360px;
+}
+.panes.mode-edit .md-body, .panes.mode-preview textarea { display: none; }
+.editor-foot { display: flex; gap: 8px; align-items: center; }
+.editor-foot .hint { flex: 1; color: var(--muted); font-size: 12px; }
+.md-body img { max-width: 100%; }
+.md-body table { border-collapse: collapse; }
+.md-body th, .md-body td { border: 1px solid var(--border); padding: 4px 10px; }
+.md-body pre { background: var(--code-bg); padding: 10px; border-radius: 6px; overflow: auto; }
+.md-body code { background: var(--code-bg); padding: 1px 4px; border-radius: 4px; }
+.md-body pre code { padding: 0; }
+.md-body blockquote { margin: 0; padding-left: 12px; border-left: 3px solid var(--accent); color: var(--muted); }
+
+#dropZone {
+  border: 2px dashed var(--border); border-radius: 12px; padding: 28px; text-align: center;
+  color: var(--muted); cursor: pointer;
+}
+#dropZone.over { border-color: var(--accent); background: var(--accent-soft); }
+.file-list { border: 1px solid var(--border); border-radius: 10px; background: var(--panel); overflow: hidden; }
+.file-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--border); }
+.file-row:first-child { border-top: 0; }
+.file-row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-row .size { color: var(--muted); font-size: 12px; }
+.muted { color: var(--muted); }
+
+/* modal & toast */
+#modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center;
+  justify-content: center; padding: 16px; z-index: 50;
+}
+#modal .card { max-width: 440px; }
+#modal h2 { margin: 0 0 10px; font-size: 18px; }
+#modalBody .f { margin-top: 10px; }
+#modal .row { justify-content: flex-end; margin-top: 18px; }
+#toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 60;
+  background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px;
+  box-shadow: var(--shadow); max-width: calc(100% - 32px);
+}
+#toast.error { background: var(--danger); color: #fff; }
+#busy {
+  position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,.15);
+  display: flex; align-items: center; justify-content: center;
+}
+#busy div { background: var(--panel); padding: 14px 20px; border-radius: 10px; box-shadow: var(--shadow); }
+
+@media (max-width: 760px) {
+  .main { flex-direction: column; }
+  aside { width: auto; border-right: 0; border-bottom: 1px solid var(--border); max-height: 45vh; }
+  aside.collapsed #treeList, aside.collapsed .aside-foot, aside.collapsed #orderBar { display: none !important; }
+  #btnToggleTree { display: inline-block !important; }
+  .fields { grid-template-columns: 1fr; }
+  .panes.mode-split .md-body { display: none; }
+  #editor, #files { padding: 12px; }
+}
+#btnToggleTree { display: none; }
+</style>
+</head>
+<body>
+
+<!-- 登录 -->
+<div id="login" hidden>
+  <div class="card">
+    <h1>📚 笔记管理后台</h1>
+    <p class="muted">第一次使用需要一个 GitHub「访问令牌」，后台用它来帮你保存笔记。</p>
+    <details>
+      <summary>怎么获取令牌？（只需要做一次）</summary>
+      <ol>
+        <li>打开 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub 新建令牌页面</a>（要先登录 <b id="ownerHint"></b>）</li>
+        <li><b>Token name</b> 随便填，比如 <code>笔记后台</code>；<b>Expiration</b> 选有效期（可选 1 年）</li>
+        <li><b>Repository access</b> 选 <code>Only select repositories</code>，再选 <code id="repoHint"></code></li>
+        <li>在 <b>Permissions</b> → <b>Repository permissions</b> 里：<br>
+          <code>Contents</code> 设为 <b>Read and write</b><br>
+          <code>Pages</code> 设为 <b>Read-only</b>（可选，用来显示发布进度）</li>
+        <li>点页面底部 <b>Generate token</b>，复制生成的 <code>github_pat_…</code> 粘贴到下面</li>
+      </ol>
+    </details>
+    <div style="margin-top:14px">
+      <label for="tokenInput">访问令牌</label>
+      <input id="tokenInput" type="password" placeholder="github_pat_..." autocomplete="off">
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--text);font-size:13px">
+        <input type="checkbox" id="rememberToken" checked> 在这台电脑上记住
+      </label>
+      <span style="flex:1"></span>
+      <button class="primary" id="btnLogin">进入后台</button>
+    </div>
+    <div class="err" id="loginErr"></div>
+    <p class="muted" style="font-size:12px;margin-bottom:0">令牌只保存在你自己的浏览器里，不会发送到 GitHub 以外的任何地方。在公共电脑上请取消「记住」。</p>
+  </div>
+</div>
+
+<!-- 主界面 -->
+<div id="app" hidden>
+  <header>
+    <button id="btnToggleTree">☰ 目录</button>
+    <span class="brand">📚 笔记管理后台</span>
+    <span id="pubStatus"></span>
+    <a id="lnkSite" target="_blank" rel="noopener"><button>🌐 查看网站</button></a>
+    <button id="btnTheme" title="切换明暗">🌓</button>
+    <button id="btnLogout">退出</button>
+  </header>
+  <div class="main">
+    <aside id="aside">
+      <div class="aside-actions">
+        <button class="primary" id="btnNewNote">＋ 新笔记</button>
+        <button id="btnNewCat">＋ 新分类</button>
+      </div>
+      <div id="treeList"></div>
+      <div id="orderBar" hidden><span>目录顺序已调整</span><button id="btnUndoOrder">撤销</button><button class="primary" id="btnSaveOrder">保存</button></div>
+      <div class="aside-foot"><button id="btnFiles">📎 附件 / 图片管理</button></div>
+    </aside>
+    <section id="workspace">
+      <div id="welcome">
+        <div class="big">📝</div>
+        <p>从左边选一篇笔记来编辑，<br>或者点「＋ 新笔记」开始写。</p>
+      </div>
+
+      <div id="editor" hidden>
+        <div class="fields">
+          <div><label for="fTitle">标题（显示在左侧目录）</label><input type="text" id="fTitle"></div>
+          <div><label for="fCat">分类</label><select id="fCat"></select></div>
+          <div><label for="fName">文件名</label><input type="text" id="fName" placeholder="英文或拼音"></div>
+        </div>
+        <div class="toolbar">
+          <button id="btnInsImg">🖼 插入图片</button>
+          <button id="btnInsFile">📎 插入附件</button>
+          <button id="btnInsTpl">📋 套用模板</button>
+          <span class="sep"></span>
+          <span class="seg" id="viewSeg">
+            <button data-mode="edit">编辑</button>
+            <button data-mode="split">分屏</button>
+            <button data-mode="preview">预览</button>
+          </span>
+        </div>
+        <div class="panes mode-split" id="panes">
+          <textarea id="mdInput" spellcheck="false" placeholder="在这里用 Markdown 写笔记…  可以直接粘贴或拖入图片"></textarea>
+          <div class="md-body" id="preview"></div>
+        </div>
+        <div class="editor-foot">
+          <button class="danger" id="btnDelNote">🗑 删除</button>
+          <span class="hint" id="editorHint"></span>
+          <button id="btnCancel">关闭</button>
+          <button class="primary" id="btnSave">💾 保存并发布</button>
+        </div>
+      </div>
+
+      <div id="files" hidden>
+        <div class="row"><h2 style="margin:0;font-size:18px;flex:1">📎 附件 / 图片管理</h2><button id="btnCloseFiles">关闭</button></div>
+        <div id="dropZone">点击选择文件，或把文件拖到这里上传<br><span style="font-size:12px">单个文件最大 25 MB · 文件是公开的，任何人都能下载</span></div>
+        <input type="file" id="fileInput" multiple hidden>
+        <div id="fileList" class="file-list"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="modal" hidden>
+  <div class="card">
+    <h2 id="modalTitle"></h2>
+    <div id="modalBody"></div>
+    <div class="row"><button id="modalCancel">取消</button><button class="primary" id="modalOk">确定</button></div>
+  </div>
+</div>
+<div id="busy" hidden><div id="busyText">处理中…</div></div>
+<div id="toast" hidden></div>
+<input type="file" id="imgPicker" accept="image/*" multiple hidden>
+<input type="file" id="attPicker" multiple hidden>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script>
+(() => {
+'use strict';
+
+// ---------- 配置 ----------
+const host = location.hostname;
+const OWNER = host.endsWith('.github.io') ? host.split('.')[0] : '3321266447-lang';
+const REPO = host.endsWith('.github.io') ? host : '3321266447-lang.github.io';
+const BRANCH = 'main';
+const R = `${OWNER}/${REPO}`;
+const SITE = `https://${REPO}/`;
+const SIDEBAR = '_sidebar.md';
+const MAX_SIZE = 25 * 1024 * 1024;
+const TOKEN_KEY = 'kb_admin_token';
+const THEME_KEY = 'kb_admin_theme';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+
+let token = null;
+let tree = new Map();      // path -> {sha, size}
+let model = null;          // {top:[], cats:[]}
+let sidebarText = '';      // 最近一次从仓库读取/写入的目录内容
+let savedOrder = '';       // 用于判断目录顺序是否有未保存的调整
+let current = null;        // 正在编辑的笔记 {isNew, sec, ci, ni, path, title, original}
+let collapsed = new Set();
+
+// ---------- 主题 ----------
+const theme = store.get(THEME_KEY);
+if (theme) document.documentElement.dataset.theme = theme;
+$('btnTheme').onclick = () => {
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const cur = document.documentElement.dataset.theme || (dark ? 'dark' : 'light');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  store.set(THEME_KEY, next);
+};
+
+// ---------- 通用 UI ----------
+let toastTimer;
+function toast(msg, type) {
+  const t = $('toast');
+  t.textContent = msg; t.className = type || ''; t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.hidden = true, type === 'error' ? 6000 : 3000);
+}
+function busy(text) {
+  $('busyText').textContent = text || '处理中…';
+  $('busy').hidden = !text;
+}
+function ask({ title, html = '', fields = [], okText = '确定', danger = false, cancelText = '取消' }) {
+  return new Promise(resolve => {
+    $('modalTitle').textContent = title;
+    $('modalBody').innerHTML = html + fields.map(f => `
+      <div class="f"><label for="mf_${f.id}">${esc(f.label)}</label>
+      ${f.options
+        ? `<select id="mf_${f.id}">${f.options.map(o => `<option value="${esc(o.value)}"${o.value === f.value ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`
+        : `<input type="text" id="mf_${f.id}" value="${esc(f.value || '')}" placeholder="${esc(f.placeholder || '')}">`}
+      ${f.help ? `<div class="muted" style="font-size:12px;margin-top:3px">${f.help}</div>` : ''}</div>`).join('');
+    const ok = $('modalOk');
+    ok.textContent = okText;
+    ok.className = danger ? 'danger solid' : 'primary';
+    $('modalCancel').textContent = cancelText;
+    $('modalCancel').hidden = cancelText === null;
+    $('modal').hidden = false;
+    const first = $('modalBody').querySelector('input');
+    if (first) setTimeout(() => first.focus(), 30);
+    const done = v => {
+      $('modal').hidden = true;
+      ok.onclick = $('modalCancel').onclick = null;
+      $('modalBody').onkeydown = null;
+      resolve(v);
+    };
+    ok.onclick = () => {
+      const vals = {};
+      fields.forEach(f => vals[f.id] = $('mf_' + f.id).value.trim());
+      done(vals);
+    };
+    $('modalCancel').onclick = () => done(null);
+    $('modalBody').onkeydown = e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') ok.click(); };
+  });
+}
+
+// ---------- GitHub 接口 ----------
+async function api(path, { method = 'GET', body, raw = false } = {}) {
+  const res = await fetch('https://api.github.com' + path, {
+    method,
+    cache: 'no-store',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      Accept: raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    let detail = '';
+    try { detail = (await res.json()).message || ''; } catch {}
+    const msg = {
+      401: '令牌无效或已过期，请重新登录',
+      403: '权限不足：请确认令牌的 Contents 权限是 Read and write',
+      404: '找不到内容（或令牌没有选中这个仓库）',
+      409: '仓库正在被别处修改，请稍后再试',
+      422: '提交被拒绝，可能是内容冲突，请刷新页面后再试',
+    }[res.status] || `请求失败（${res.status}）`;
+    const err = new Error(msg + (detail ? `：${detail}` : ''));
+    err.status = res.status;
+    throw err;
+  }
+  if (res.status === 204) return null;
+  return raw ? res.text() : res.json();
+}
+const getText = path => api(`/repos/${R}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}?ref=${BRANCH}`, { raw: true });
+
+async function loadTree() {
+  const t = await api(`/repos/${R}/git/trees/${BRANCH}?recursive=1`);
+  tree = new Map();
+  t.tree.filter(x => x.type === 'blob').forEach(x => tree.set(x.path, { sha: x.sha, size: x.size }));
+}
+
+// 一次提交多个文件改动（新增/修改/删除），整站只触发一次发布
+async function commit(message, changes) {
+  const ref = await api(`/repos/${R}/git/ref/heads/${BRANCH}`);
+  const baseSha = ref.object.sha;
+  const base = await api(`/repos/${R}/git/commits/${baseSha}`);
+  const entries = [];
+  for (const c of changes) {
+    if (c.delete) { entries.push({ path: c.path, mode: '100644', type: 'blob', sha: null }); continue; }
+    const blob = await api(`/repos/${R}/git/blobs`, {
+      method: 'POST',
+      body: c.base64 != null ? { content: c.base64, encoding: 'base64' } : { content: c.text, encoding: 'utf-8' },
+    });
+    entries.push({ path: c.path, mode: '100644', type: 'blob', sha: blob.sha });
+  }
+  const newTree = await api(`/repos/${R}/git/trees`, { method: 'POST', body: { base_tree: base.tree.sha, tree: entries } });
+  const newCommit = await api(`/repos/${R}/git/commits`, { method: 'POST', body: { message, tree: newTree.sha, parents: [baseSha] } });
+  await api(`/repos/${R}/git/refs/heads/${BRANCH}`, { method: 'PATCH', body: { sha: newCommit.sha } });
+  watchPages(newCommit.sha);
+  return newCommit.sha;
+}
+
+// 带目录一起提交：先确认目录没有在别处被改过
+async function commitWithSidebar(message, changes) {
+  const remote = await getText(SIDEBAR).catch(e => { if (e.status === 404) return ''; throw e; });
+  if (remote !== sidebarText) {
+    throw new Error('目录文件在别处被修改过了，请刷新页面后再操作（你正在编辑的内容请先复制保存）');
+  }
+  const text = serialize(model);
+  await commit(message, [...changes, { path: SIDEBAR, text }]);
+  sidebarText = text;
+  savedOrder = text;
+  await loadTree();
+  updateOrderBar();
+}
+
+// ---------- 发布状态 ----------
+let watchId = 0;
+async function watchPages(sha) {
+  const id = ++watchId;
+  const el = $('pubStatus');
+  el.className = ''; el.textContent = '⏳ 网站发布中…';
+  for (let i = 0; i < 40; i++) {
+    await new Promise(r => setTimeout(r, 6000));
+    if (id !== watchId) return;
+    try {
+      const b = await api(`/repos/${R}/pages/builds/latest`);
+      if (b.commit === sha && b.status === 'built') { el.className = 'ok'; el.textContent = '✅ 网站已更新'; return; }
+      if (b.commit === sha && b.status === 'errored') { el.textContent = '⚠️ 发布失败，稍后再保存一次试试'; return; }
+    } catch (e) {
+      if (id === watchId) { el.textContent = '✅ 已保存，约 1 分钟后网站更新'; }
+      return;
+    }
+  }
+  if (id === watchId) el.textContent = '✅ 已保存，网站稍后更新';
+}
+
+// ---------- 目录（_sidebar.md）解析 ----------
+function parseSidebar(text) {
+  const m = { top: [], cats: [] };
+  let cur = null;
+  for (const line of text.split(/\r?\n/)) {
+    const mm = line.match(/^(\s*)[-*+]\s+(.+?)\s*$/);
+    if (!mm) continue;
+    const indent = mm[1].replace(/\t/g, '  ').length;
+    const link = mm[2].match(/^\[(.*)\]\(([^)\s]+)(?:\s+['"].*['"])?\)$/);
+    if (indent === 0) {
+      if (link) { m.top.push({ title: link[1], path: link[2] }); cur = null; }
+      else { cur = { name: mm[2], notes: [] }; m.cats.push(cur); }
+    } else if (cur && link) {
+      cur.notes.push({ title: link[1], path: link[2] });
+    }
+  }
+  return m;
+}
+const cleanTitle = s => s.replace(/[\[\]\r\n]/g, ' ').trim();
+function serialize(m) {
+  let out = m.top.map(n => `- [${cleanTitle(n.title)}](${n.path})`).join('\n') + '\n';
+  for (const c of m.cats) {
+    out += `\n- ${c.name}\n`;
+    out += c.notes.map(n => `  - [${cleanTitle(n.title)}](${n.path})`).join('\n') + (c.notes.length ? '\n' : '');
+  }
+  return out;
+}
+const filePath = p => (p === '/' || p === '') ? 'README.md' : p.replace(/^\//, '');
+const dirOf = p => { const f = filePath(p); const i = f.lastIndexOf('/'); return i < 0 ? '' : f.slice(0, i); };
+function catFolder(c) {
+  if (c.folder != null) return c.folder;
+  const n = c.notes.find(n => dirOf(n.path));
+  return n ? dirOf(n.path) : '';
+}
+const join = (dir, name) => dir ? `${dir}/${name}` : name;
+
+// 分类概览页（README.md）同步列表
+async function readmeAdd(folder, title, path, changes) {
+  const rp = join(folder, 'README.md');
+  if (!folder || rp === path || !tree.has(rp)) return;
+  let t = pending(changes, rp) ?? await getText(rp);
+  t = t.replace(/\s*$/, '\n');
+  const last = t.trim().split('\n').pop() || '';
+  if (last.trim().startsWith('|')) t += '\n';
+  t += `- [${cleanTitle(title)}](${path})\n`;
+  setChange(changes, rp, t);
+}
+async function readmeRemove(folder, path, changes) {
+  const rp = join(folder, 'README.md');
+  if (!folder || rp === path || !tree.has(rp)) return;
+  const t = pending(changes, rp) ?? await getText(rp);
+  const n = t.split('\n').filter(l => !l.includes(`](${path})`) && !l.includes(`](${path} `)).join('\n');
+  if (n !== t) setChange(changes, rp, n);
+}
+async function readmeRename(folder, path, oldT, newT, changes) {
+  const rp = join(folder, 'README.md');
+  if (!folder || rp === path || !tree.has(rp)) return;
+  const t = pending(changes, rp) ?? await getText(rp);
+  const n = t.split(`[${oldT}](${path}`).join(`[${cleanTitle(newT)}](${path}`);
+  if (n !== t) setChange(changes, rp, n);
+}
+const pending = (changes, p) => { const c = changes.find(c => c.path === p && c.text != null); return c ? c.text : null; };
+const setChange = (changes, p, text) => {
+  const c = changes.find(c => c.path === p);
+  if (c) { c.text = text; delete c.delete; } else changes.push({ path: p, text });
+};
+
+// ---------- 左侧目录渲染 ----------
+function renderTree() {
+  const L = $('treeList');
+  let h = '';
+  h += `<div class="tree-sec"><div class="tree-head" data-act="toggle" data-key="__top"><span class="caret">${collapsed.has('__top') ? '▶' : '▼'}</span><span class="name">🔖 固定页面</span></div>`;
+  if (!collapsed.has('__top')) {
+    model.top.forEach((n, i) => {
+      h += `<div class="tree-item${isActive('top', 0, i) ? ' active' : ''}" data-act="open" data-sec="top" data-ni="${i}"><span class="name">${esc(n.title)}</span></div>`;
+    });
+  }
+  h += '</div>';
+  model.cats.forEach((c, ci) => {
+    const key = 'c' + ci + c.name;
+    const closed = collapsed.has(key);
+    h += `<div class="tree-sec"><div class="tree-head" data-act="toggle" data-key="${esc(key)}">
+      <span class="caret">${closed ? '▶' : '▼'}</span><span class="name" title="${esc(c.name)}">${esc(c.name)}</span>
+      <span class="ops">
+        <button class="icon" data-act="noteIn" data-ci="${ci}" title="在这个分类新建笔记">＋</button>
+        <button class="icon" data-act="catUp" data-ci="${ci}" title="上移分类"${ci === 0 ? ' disabled' : ''}>↑</button>
+        <button class="icon" data-act="catDown" data-ci="${ci}" title="下移分类"${ci === model.cats.length - 1 ? ' disabled' : ''}>↓</button>
+        <button class="icon" data-act="catRename" data-ci="${ci}" title="重命名分类">✎</button>
+        <button class="icon" data-act="catDel" data-ci="${ci}" title="删除分类">🗑</button>
+      </span></div>`;
+    if (!closed) {
+      if (!c.notes.length) h += `<div class="tree-empty">（还没有笔记）</div>`;
+      c.notes.forEach((n, ni) => {
+        h += `<div class="tree-item${isActive('cat', ci, ni) ? ' active' : ''}" data-act="open" data-sec="cat" data-ci="${ci}" data-ni="${ni}">
+          <span class="name" title="${esc(n.path)}">${esc(n.title)}</span>
+          <span class="ops">
+            <button class="icon" data-act="noteUp" data-ci="${ci}" data-ni="${ni}" title="上移"${ni === 0 ? ' disabled' : ''}>↑</button>
+            <button class="icon" data-act="noteDown" data-ci="${ci}" data-ni="${ni}" title="下移"${ni === c.notes.length - 1 ? ' disabled' : ''}>↓</button>
+          </span></div>`;
+      });
+    }
+    h += '</div>';
+  });
+  L.innerHTML = h;
+}
+const isActive = (sec, ci, ni) => current && !current.isNew && current.sec === sec && (sec === 'top' || current.ci === ci) && current.ni === ni;
+
+$('treeList').addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  e.stopPropagation();
+  const act = el.dataset.act;
+  const ci = +el.dataset.ci, ni = +el.dataset.ni;
+  if (act === 'toggle') {
+    const k = el.dataset.key;
+    collapsed.has(k) ? collapsed.delete(k) : collapsed.add(k);
+    renderTree();
+  } else if (act === 'open') {
+    if (!(await confirmLeave())) return;
+    openNote(el.dataset.sec, ci, ni);
+  } else if (act === 'noteIn') {
+    if (!(await confirmLeave())) return;
+    newNote(ci);
+  } else if (act === 'catUp' || act === 'catDown') {
+    const j = act === 'catUp' ? ci - 1 : ci + 1;
+    [model.cats[ci], model.cats[j]] = [model.cats[j], model.cats[ci]];
+    if (current && current.sec === 'cat') { if (current.ci === ci) current.ci = j; else if (current.ci === j) current.ci = ci; }
+    afterReorder();
+  } else if (act === 'noteUp' || act === 'noteDown') {
+    const notes = model.cats[ci].notes;
+    const j = act === 'noteUp' ? ni - 1 : ni + 1;
+    [notes[ni], notes[j]] = [notes[j], notes[ni]];
+    if (current && current.sec === 'cat' && current.ci === ci) { if (current.ni === ni) current.ni = j; else if (current.ni === j) current.ni = ni; }
+    afterReorder();
+  } else if (act === 'catRename') {
+    renameCategory(ci);
+  } else if (act === 'catDel') {
+    deleteCategory(ci);
+  }
+});
+function afterReorder() { renderTree(); refreshCatSelect(); updateOrderBar(); }
+function updateOrderBar() { $('orderBar').hidden = serialize(model) === savedOrder; }
+$('btnUndoOrder').onclick = () => {
+  model = parseSidebar(savedOrder);
+  current && (current = null, showPanel('welcome'));
+  renderTree(); updateOrderBar();
+};
+$('btnSaveOrder').onclick = async () => {
+  try { busy('正在保存目录顺序…'); await commitWithSidebar('调整目录顺序', []); toast('目录顺序已保存'); }
+  catch (e) { toast(e.message, 'error'); }
+  finally { busy(); }
+};
+
+// ---------- 面板切换 ----------
+function showPanel(name) {
+  $('welcome').hidden = name !== 'welcome';
+  $('editor').hidden = name !== 'editor';
+  $('files').hidden = name !== 'files';
+  if (name !== 'editor') { current = null; renderTree(); }
+  if (matchMedia('(max-width: 760px)').matches && name !== 'welcome') $('aside').classList.add('collapsed');
+}
+$('btnToggleTree').onclick = () => $('aside').classList.toggle('collapsed');
+
+// ---------- 编辑器 ----------
+// 下拉框按分类对象跟踪选中项，分类调整顺序/删除后不会选错
+let catOptions = [];
+function refreshCatSelect(sel) {
+  const s = $('fCat');
+  const obj = sel != null ? model.cats[sel] : catOptions[+s.value];
+  catOptions = model.cats.slice();
+  s.innerHTML = model.cats.map((c, i) => `<option value="${i}">${esc(c.name)}</option>`).join('');
+  const i = obj ? model.cats.indexOf(obj) : -1;
+  s.value = String(i >= 0 ? i : 0);
+}
+const dirty = () => current && ($('mdInput').value !== current.original || $('fTitle').value.trim() !== current.title
+  || (current.sec === 'cat' && +$('fCat').value !== current.ci));
+async function confirmLeave() {
+  if (!$('editor').hidden && dirty()) {
+    const r = await ask({ title: '有未保存的修改', html: '<p>当前笔记还没保存，确定要放弃修改吗？</p>', okText: '放弃修改', danger: true });
+    return !!r;
+  }
+  return true;
+}
+window.addEventListener('beforeunload', e => {
+  if ((!$('editor').hidden && dirty()) || !$('orderBar').hidden) { e.preventDefault(); e.returnValue = ''; }
+});
+
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function stamp() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+function template(title, cat) {
+  const catName = cat ? cat.name.replace(/^[^\p{L}\p{N}]+/u, '') : '';
+  return `# ${title || '笔记标题'}\n\n<p class="note-meta">📅 ${today()} · 🏷 ${catName}</p>\n\n## 一句话总结\n\n> 用一句话说清楚这篇笔记讲了什么。\n\n## 核心要点\n\n1. 要点一\n2. 要点二\n3. 要点三\n\n## 详细内容\n\n在这里展开写……\n\n## 我的思考\n\n- \n\n## 参考资料\n\n- \n`;
+}
+
+function newNote(ci) {
+  if (!model.cats.length) { toast('请先新建一个分类', 'error'); return; }
+  if (ci == null || isNaN(ci)) ci = 0;
+  current = { isNew: true, sec: 'cat', ci, ni: -1, path: null, title: '', original: '' };
+  $('fTitle').value = '';
+  refreshCatSelect(ci);
+  $('fCat').disabled = false;
+  $('fName').value = 'note-' + stamp();
+  $('fName').disabled = false;
+  $('fName').parentElement.hidden = false;
+  $('mdInput').value = template('', model.cats[ci]);
+  current.original = $('mdInput').value;
+  $('btnDelNote').hidden = true;
+  $('editorHint').textContent = '新笔记 · 保存后会自动加到左侧目录';
+  showPanel('editor'); renderTree(); renderPreview();
+  $('fTitle').focus();
+}
+
+async function openNote(sec, ci, ni) {
+  const n = sec === 'top' ? model.top[ni] : model.cats[ci].notes[ni];
+  const path = filePath(n.path);
+  try {
+    busy('正在读取笔记…');
+    const text = tree.has(path) ? await getText(path) : '';
+    current = { isNew: false, sec, ci: sec === 'top' ? -1 : ci, ni, path, title: n.title, original: text };
+    $('fTitle').value = n.title;
+    refreshCatSelect(sec === 'top' ? 0 : ci);
+    $('fCat').disabled = sec === 'top';
+    $('fName').value = path;
+    $('fName').disabled = true;
+    $('fName').parentElement.hidden = false;
+    $('mdInput').value = text;
+    $('btnDelNote').hidden = sec === 'top' && path === 'README.md';
+    $('editorHint').textContent = tree.has(path) ? `文件：${path}` : `文件 ${path} 还不存在，保存后会新建`;
+    showPanel('editor'); renderTree(); renderPreview();
+  } catch (e) { toast(e.message, 'error'); }
+  finally { busy(); }
+}
+
+async function saveNote() {
+  if (!current) return;
+  const title = $('fTitle').value.trim();
+  if (!title) { toast('请填写标题', 'error'); $('fTitle').focus(); return; }
+  const content = $('mdInput').value;
+  const changes = [];
+  let msg;
+  try {
+    busy('正在保存并发布…');
+    if (current.isNew) {
+      let name = $('fName').value.trim().replace(/\.md$/i, '');
+      if (!/^[\w\-一-龥]+$/.test(name)) { busy(); toast('文件名只能用字母、数字、中文、- 和 _', 'error'); return; }
+      const ci = +$('fCat').value;
+      const cat = model.cats[ci];
+      const folder = catFolder(cat);
+      const path = join(folder, name + '.md');
+      if (tree.has(path)) { busy(); toast('这个文件名已经存在，换一个吧', 'error'); return; }
+      changes.push({ path, text: content });
+      await readmeAdd(folder, title, path, changes);
+      cat.notes.push({ title, path });
+      msg = `新增笔记：${title}`;
+      try { await commitWithSidebar(msg, changes); }
+      catch (e) { cat.notes.pop(); throw e; }
+      current = { isNew: false, sec: 'cat', ci, ni: cat.notes.length - 1, path, title, original: content };
+    } else if (current.sec === 'top') {
+      const n = model.top[current.ni];
+      const oldTitle = n.title;
+      changes.push({ path: current.path, text: content });
+      n.title = title;
+      msg = `更新页面：${title}`;
+      try {
+        if (oldTitle !== title) await commitWithSidebar(msg, changes);
+        else { await commit(msg, changes); await loadTree(); }
+      } catch (e) { n.title = oldTitle; throw e; }
+      current.title = title; current.original = content;
+    } else {
+      const fromCi = current.ci, ni = current.ni;
+      const toCi = +$('fCat').value;
+      const fromCat = model.cats[fromCi];
+      const note = fromCat.notes[ni];
+      const oldTitle = note.title, oldLink = note.path;
+      const oldPath = current.path;
+      const fromFolder = catFolder(fromCat);
+      const snapshot = serialize(model);
+      if (toCi !== fromCi) {
+        const toCat = model.cats[toCi];
+        const toFolder = catFolder(toCat);
+        const base = oldPath.split('/').pop();
+        const newPath = join(toFolder, base);
+        if (base === 'README.md') { busy(); toast('分类的概览页不能移动到别的分类', 'error'); return; }
+        if (tree.has(newPath)) { busy(); toast(`目标分类里已有同名文件 ${base}`, 'error'); return; }
+        changes.push({ path: newPath, text: content });
+        if (tree.has(oldPath)) changes.push({ path: oldPath, delete: true });
+        await readmeRemove(fromFolder, oldLink, changes);
+        await readmeAdd(toFolder, title, newPath, changes);
+        fromCat.notes.splice(ni, 1);
+        toCat.notes.push({ title, path: newPath });
+        msg = `移动笔记：${title} → ${toCat.name}`;
+        try { await commitWithSidebar(msg, changes); }
+        catch (e) { model = parseSidebar(snapshot); renderTree(); refreshCatSelect(fromCi); throw e; }
+        current = { isNew: false, sec: 'cat', ci: toCi, ni: toCat.notes.length - 1, path: newPath, title, original: content };
+      } else {
+        changes.push({ path: oldPath, text: content });
+        msg = `更新笔记：${title}`;
+        if (oldTitle !== title) {
+          await readmeRename(fromFolder, oldLink, oldTitle, title, changes);
+          note.title = title;
+          try { await commitWithSidebar(msg, changes); }
+          catch (e) { note.title = oldTitle; throw e; }
+        } else {
+          await commit(msg, changes); await loadTree();
+        }
+        current.title = title; current.original = content;
+      }
+    }
+    $('fCat').disabled = current.sec === 'top';
+    $('fName').value = current.path; $('fName').disabled = true;
+    $('btnDelNote').hidden = current.sec === 'top' && current.path === 'README.md';
+    $('editorHint').textContent = `文件：${current.path}`;
+    renderTree(); refreshCatSelect(current.sec === 'top' ? 0 : current.ci);
+    toast('✅ 已保存，网站约 1 分钟后更新');
+  } catch (e) { toast(e.message, 'error'); }
+  finally { busy(); }
+}
+
+async function deleteNote() {
+  if (!current || current.isNew) return;
+  const r = await ask({
+    title: '删除笔记',
+    html: `<p>确定删除「<b>${esc(current.title)}</b>」吗？</p><p class="muted" style="font-size:12px">文件 ${esc(current.path)} 会从网站移除。（GitHub 会保留历史记录，必要时可以找回）</p>`,
+    okText: '删除', danger: true,
+  });
+  if (!r) return;
+  const snapshot = serialize(model);
+  try {
+    busy('正在删除…');
+    const changes = [];
+    if (tree.has(current.path)) changes.push({ path: current.path, delete: true });
+    if (current.sec === 'top') {
+      model.top.splice(current.ni, 1);
+    } else {
+      const cat = model.cats[current.ci];
+      const link = cat.notes[current.ni].path;
+      await readmeRemove(catFolder(cat), link, changes);
+      cat.notes.splice(current.ni, 1);
+    }
+    await commitWithSidebar(`删除笔记：${current.title}`, changes);
+    showPanel('welcome');
+    toast('已删除');
+  } catch (e) { model = parseSidebar(snapshot); renderTree(); refreshCatSelect(current && current.ci >= 0 ? current.ci : 0); toast(e.message, 'error'); }
+  finally { busy(); }
+}
+
+// ---------- 分类 ----------
+async function newCategory() {
+  const v = await ask({
+    title: '新建分类',
+    fields: [
+      { id: 'emoji', label: '图标（一个表情，可留空）', value: '📁' },
+      { id: 'name', label: '分类名称', placeholder: '例如：数学' },
+      { id: 'folder', label: '文件夹名（英文或拼音）', placeholder: '例如：math', help: '笔记文件会放在这个文件夹里，之后不能改' },
+    ],
+    okText: '创建',
+  });
+  if (!v) return;
+  if (!v.name) { toast('请填写分类名称', 'error'); return; }
+  if (!/^[a-zA-Z0-9][\w\-]*$/.test(v.folder)) { toast('文件夹名只能用英文字母、数字、- 和 _', 'error'); return; }
+  if ([...tree.keys()].some(p => p.startsWith(v.folder + '/')) || model.cats.some(c => catFolder(c) === v.folder)) {
+    toast('这个文件夹名已被使用，换一个吧', 'error'); return;
+  }
+  const name = (v.emoji ? v.emoji + ' ' : '') + v.name;
+  const readme = join(v.folder, 'README.md');
+  const cat = { name, folder: v.folder, notes: [{ title: '概览', path: readme }] };
+  model.cats.push(cat);
+  try {
+    busy('正在创建分类…');
+    await commitWithSidebar(`新建分类：${name}`, [{ path: readme, text: `# ${name}\n\n这个分类的简介写在这里。\n\n` }]);
+    renderTree(); refreshCatSelect();
+    toast('分类已创建');
+  } catch (e) { model.cats.pop(); toast(e.message, 'error'); }
+  finally { busy(); }
+}
+
+async function renameCategory(ci) {
+  const c = model.cats[ci];
+  const v = await ask({ title: '重命名分类', fields: [{ id: 'name', label: '新名称（可以带表情）', value: c.name }], okText: '保存' });
+  if (!v || !v.name || v.name === c.name) return;
+  const old = c.name;
+  c.name = v.name.replace(/[\r\n]/g, ' ');
+  try { busy('正在保存…'); await commitWithSidebar(`重命名分类：${old} → ${c.name}`, []); renderTree(); refreshCatSelect(); toast('已重命名'); }
+  catch (e) { c.name = old; toast(e.message, 'error'); }
+  finally { busy(); }
+}
+
+async function deleteCategory(ci) {
+  const c = model.cats[ci];
+  const folder = catFolder(c);
+  const files = c.notes.map(n => filePath(n.path)).filter(p => tree.has(p));
+  if (folder) [...tree.keys()].forEach(p => { if (p.startsWith(folder + '/') && !files.includes(p)) files.push(p); });
+  const v = await ask({
+    title: '删除分类',
+    html: `<p>将删除分类「<b>${esc(c.name)}</b>」以及其中的 <b>${files.length}</b> 个文件：</p>
+      <div class="muted" style="font-size:12px;max-height:120px;overflow:auto">${files.map(esc).join('<br>') || '（无）'}</div>`,
+    fields: [{ id: 'confirm', label: '请输入分类名称确认删除', placeholder: c.name }],
+    okText: '永久删除', danger: true,
+  });
+  if (!v) return;
+  if (v.confirm !== c.name) { toast('名称不一致，已取消', 'error'); return; }
+  model.cats.splice(ci, 1);
+  try {
+    busy('正在删除分类…');
+    await commitWithSidebar(`删除分类：${c.name}`, files.map(p => ({ path: p, delete: true })));
+    if (current && current.sec === 'cat' && current.ci === ci) showPanel('welcome');
+    else if (current && current.sec === 'cat' && current.ci > ci) current.ci--;
+    renderTree(); refreshCatSelect();
+    toast('分类已删除');
+  } catch (e) { model.cats.splice(ci, 0, c); toast(e.message, 'error'); }
+  finally { busy(); }
+}
+
+// ---------- 预览 ----------
+let previewTimer;
+function renderPreview() {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => {
+    const html = DOMPurify.sanitize(marked.parse($('mdInput').value || ''));
+    const box = $('preview');
+    box.innerHTML = html;
+    // 刚上传的图片网站可能还没更新，预览时直接从仓库读取
+    box.querySelectorAll('img').forEach(img => {
+      const src = img.getAttribute('src') || '';
+      if (src.startsWith('/') && !src.startsWith('//')) {
+        img.src = `https://raw.githubusercontent.com/${R}/${BRANCH}${src}`;
+      }
+    });
+    box.querySelectorAll('a').forEach(a => { a.target = '_blank'; a.rel = 'noopener'; });
+  }, 150);
+}
+$('mdInput').addEventListener('input', renderPreview);
+$('viewSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  setMode(b.dataset.mode);
+});
+function setMode(mode) {
+  $('panes').className = 'panes mode-' + mode;
+  $('viewSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.mode === mode));
+  if (mode !== 'edit') renderPreview();
+}
+setMode(matchMedia('(max-width: 760px)').matches ? 'edit' : 'split');
+
+function insertAtCursor(text) {
+  const ta = $('mdInput');
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0, s) + text + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + text.length;
+  ta.focus();
+  renderPreview();
+}
+
+// ---------- 上传 ----------
+function readBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(',')[1] || '');
+    r.onerror = () => rej(new Error('读取文件失败：' + file.name));
+    r.readAsDataURL(file);
+  });
+}
+function safeName(name) {
+  const dot = name.lastIndexOf('.');
+  let base = dot > 0 ? name.slice(0, dot) : name;
+  let ext = dot > 0 ? name.slice(dot).toLowerCase() : '';
+  base = base.replace(/[\s#?%&\\/:*"<>|'()\[\]]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'file';
+  return base + ext;
+}
+function uniquePath(dir, name) {
+  let p = `${dir}/${name}`, i = 1;
+  const dot = name.lastIndexOf('.');
+  while (tree.has(p)) {
+    p = dot > 0 ? `${dir}/${name.slice(0, dot)}-${i}${name.slice(dot)}` : `${dir}/${name}-${i}`;
+    i++;
+  }
+  return p;
+}
+async function uploadFiles(fileList, dir) {
+  const files = [...fileList];
+  if (!files.length) return [];
+  const big = files.filter(f => f.size > MAX_SIZE);
+  if (big.length) { toast(`文件太大（超过 25 MB）：${big.map(f => f.name).join('、')}`, 'error'); return []; }
+  const changes = [], done = [];
+  try {
+    busy(`正在上传 ${files.length} 个文件…`);
+    for (const f of files) {
+      const path = uniquePath(dir, safeName(f.name || ('image-' + stamp() + '.png')));
+      tree.set(path, { sha: '', size: f.size }); // 占位，避免同批重名
+      changes.push({ path, base64: await readBase64(f) });
+      done.push({ path, name: f.name || path.split('/').pop(), isImg: (f.type || '').startsWith('image/') });
+    }
+    await commit(`上传文件：${done.map(d => d.path.split('/').pop()).join(', ')}`, changes);
+    await loadTree();
+    toast(`✅ 已上传 ${done.length} 个文件`);
+    return done;
+  } catch (e) {
+    await loadTree().catch(() => {});
+    toast(e.message, 'error');
+    return [];
+  } finally { busy(); }
+}
+const linkFor = d => {
+  const url = '/' + d.path.split('/').map(encodeURIComponent).join('/');
+  return d.isImg ? `![${d.name}](${url})` : `[📎 ${d.name}](${url} ':ignore')`;
+};
+
+$('btnInsImg').onclick = () => $('imgPicker').click();
+$('btnInsFile').onclick = () => $('attPicker').click();
+$('imgPicker').onchange = async e => {
+  const done = await uploadFiles(e.target.files, 'images'); e.target.value = '';
+  if (done.length) insertAtCursor(done.map(linkFor).join('\n') + '\n');
+};
+$('attPicker').onchange = async e => {
+  const done = await uploadFiles(e.target.files, 'files'); e.target.value = '';
+  if (done.length) insertAtCursor(done.map(d => linkFor({ ...d, isImg: false })).join('\n') + '\n');
+};
+$('mdInput').addEventListener('paste', async e => {
+  const imgs = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith('image/'));
+  if (!imgs.length) return;
+  e.preventDefault();
+  const done = await uploadFiles(imgs, 'images');
+  if (done.length) insertAtCursor(done.map(linkFor).join('\n') + '\n');
+});
+$('mdInput').addEventListener('dragover', e => { if (e.dataTransfer?.types.includes('Files')) e.preventDefault(); });
+$('mdInput').addEventListener('drop', async e => {
+  const fl = [...(e.dataTransfer?.files || [])];
+  if (!fl.length) return;
+  e.preventDefault();
+  const imgs = fl.filter(f => f.type.startsWith('image/')), others = fl.filter(f => !f.type.startsWith('image/'));
+  const d1 = imgs.length ? await uploadFiles(imgs, 'images') : [];
+  const d2 = others.length ? await uploadFiles(others, 'files') : [];
+  const all = [...d1, ...d2];
+  if (all.length) insertAtCursor(all.map(linkFor).join('\n') + '\n');
+});
+$('btnInsTpl').onclick = async () => {
+  if ($('mdInput').value.trim()) {
+    const r = await ask({ title: '套用模板', html: '<p>会用模板替换当前全部内容，确定吗？</p>', okText: '替换', danger: true });
+    if (!r) return;
+  }
+  const cat = current && current.sec === 'cat' ? model.cats[+$('fCat').value] : null;
+  $('mdInput').value = template($('fTitle').value.trim(), cat);
+  renderPreview();
+};
+
+// ---------- 附件管理 ----------
+const fmtSize = n => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
+function renderFiles() {
+  const list = [...tree.entries()].filter(([p]) => p.startsWith('files/') || p.startsWith('images/'))
+    .sort((a, b) => a[0].localeCompare(b[0]));
+  const total = [...tree.values()].reduce((s, x) => s + (x.size || 0), 0);
+  $('fileList').innerHTML = (list.length ? list.map(([p, x]) => `
+    <div class="file-row">
+      <span>${p.startsWith('images/') ? '🖼' : '📄'}</span>
+      <span class="name" title="${esc(p)}">${esc(p)}</span>
+      <span class="size">${fmtSize(x.size || 0)}</span>
+      <button class="icon" data-act="copy" data-p="${esc(p)}" title="复制插入代码">复制链接</button>
+      <a href="${SITE}${p.split('/').map(encodeURIComponent).join('/')}" target="_blank" rel="noopener"><button class="icon">打开</button></a>
+      <button class="icon danger" data-act="del" data-p="${esc(p)}">删除</button>
+    </div>`).join('') : '<div class="file-row muted">还没有上传任何附件</div>')
+    + `<div class="file-row muted" style="font-size:12px">整个网站已用 ${fmtSize(total)} / 1 GB</div>`;
+}
+$('btnFiles').onclick = async () => {
+  if (!(await confirmLeave())) return;
+  showPanel('files'); renderFiles();
+};
+$('btnCloseFiles').onclick = () => showPanel('welcome');
+$('dropZone').onclick = () => $('fileInput').click();
+$('fileInput').onchange = async e => { await uploadSplit(e.target.files); e.target.value = ''; };
+['dragenter', 'dragover'].forEach(t => $('dropZone').addEventListener(t, e => { e.preventDefault(); $('dropZone').classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => $('dropZone').addEventListener(t, () => $('dropZone').classList.remove('over')));
+$('dropZone').addEventListener('drop', async e => { e.preventDefault(); await uploadSplit(e.dataTransfer.files); });
+async function uploadSplit(fl) {
+  const all = [...fl];
+  const imgs = all.filter(f => f.type.startsWith('image/')), others = all.filter(f => !f.type.startsWith('image/'));
+  if (imgs.length) await uploadFiles(imgs, 'images');
+  if (others.length) await uploadFiles(others, 'files');
+  renderFiles();
+}
+$('fileList').addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const p = b.dataset.p;
+  if (b.dataset.act === 'copy') {
+    const code = linkFor({ path: p, name: p.split('/').pop(), isImg: p.startsWith('images/') });
+    try { await navigator.clipboard.writeText(code); toast('已复制，粘贴到笔记里即可'); }
+    catch { await ask({ title: '复制下面的代码', html: `<input type="text" value="${esc(code)}" onfocus="this.select()">`, okText: '好', cancelText: null }); }
+  } else if (b.dataset.act === 'del') {
+    const r = await ask({ title: '删除文件', html: `<p>确定删除 <b>${esc(p)}</b> 吗？引用它的笔记里会显示不出来。</p>`, okText: '删除', danger: true });
+    if (!r) return;
+    try { busy('正在删除…'); await commit(`删除文件：${p}`, [{ path: p, delete: true }]); await loadTree(); renderFiles(); toast('已删除'); }
+    catch (err) { toast(err.message, 'error'); }
+    finally { busy(); }
+  }
+});
+
+// ---------- 按钮 ----------
+$('btnNewNote').onclick = async () => {
+  if (!(await confirmLeave())) return;
+  const ci = current && current.sec === 'cat' ? current.ci : 0;
+  newNote(ci);
+};
+$('btnNewCat').onclick = newCategory;
+$('btnSave').onclick = saveNote;
+$('btnDelNote').onclick = deleteNote;
+$('btnCancel').onclick = async () => { if (await confirmLeave()) showPanel('welcome'); };
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's' && !$('editor').hidden) { e.preventDefault(); saveNote(); }
+  if (e.key === 'Escape' && !$('modal').hidden) $('modalCancel').click();
+});
+$('btnLogout').onclick = async () => {
+  if (!(await confirmLeave())) return;
+  const r = await ask({ title: '退出后台', html: '<p>退出后会清除这台电脑上保存的令牌，下次需要重新粘贴。</p>', okText: '退出' });
+  if (!r) return;
+  store.del(TOKEN_KEY); token = null; location.reload();
+};
+
+// ---------- 启动 ----------
+async function start() {
+  busy('正在加载…');
+  try {
+    const repo = await api(`/repos/${R}`);
+    if (!repo.permissions || !repo.permissions.push) throw new Error('这个令牌没有写入权限：请把 Contents 设为 Read and write');
+    await loadTree();
+    sidebarText = tree.has(SIDEBAR) ? await getText(SIDEBAR) : '';
+    model = parseSidebar(sidebarText);
+    savedOrder = serialize(model);
+    updateOrderBar();
+    $('lnkSite').href = SITE;
+    $('login').hidden = true; $('app').hidden = false;
+    renderTree(); refreshCatSelect(); showPanel('welcome');
+  } catch (e) {
+    $('app').hidden = true; $('login').hidden = false;
+    $('loginErr').textContent = e.message;
+    if (e.status === 401) store.del(TOKEN_KEY);
+  } finally { busy(); }
+}
+$('ownerHint').textContent = OWNER;
+$('repoHint').textContent = R;
+$('btnLogin').onclick = () => {
+  const t = $('tokenInput').value.trim();
+  if (!t) { $('loginErr').textContent = '请先粘贴令牌'; return; }
+  token = t;
+  if ($('rememberToken').checked) store.set(TOKEN_KEY, t); else store.del(TOKEN_KEY);
+  $('tokenInput').value = '';
+  $('loginErr').textContent = '';
+  start();
+};
+$('tokenInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnLogin').click(); });
+
+token = store.get(TOKEN_KEY);
+if (token) start(); else $('login').hidden = false;
+})();
+</script>
+</body>
+</html>
