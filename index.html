@@ -4,8 +4,25 @@
   <meta charset="UTF-8">
   <title>我的学习笔记</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="个人学习笔记知识库">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4.13.1/lib/themes/vue.css">
+  <!-- 网站设置：由管理后台「⚙️ 网站设置」修改 -->
+  <script>
+/* SITE_CONFIG_START */
+window.SITE_CONFIG = {
+  "name": "📚 我的学习笔记",
+  "title": "我的学习笔记",
+  "themeColor": "#3b82f6",
+  "searchPlaceholder": "搜索笔记…"
+};
+/* SITE_CONFIG_END */
+  </script>
+  <script>
+    (function () {
+      var c = window.SITE_CONFIG || {};
+      if (c.title) document.title = c.title;
+      if (c.themeColor) document.documentElement.style.setProperty('--theme-color', c.themeColor);
+    })();
+  </script>
   <style>
     :root {
       --theme-color: #3b82f6;
@@ -20,9 +37,9 @@
 <body>
   <div id="app">加载中…</div>
   <script>
+    var site = window.SITE_CONFIG || {};
     window.$docsify = {
-      name: '📚 我的学习笔记',
-      repo: '',
+      name: site.name || '',
       loadSidebar: true,
       subMaxLevel: 2,
       auto2top: true,
@@ -30,7 +47,7 @@
       // 每次都读取最新内容（GitHub Pages 默认让浏览器缓存 10 分钟）
       requestHeaders: { 'cache-control': 'max-age=0' },
       search: {
-        placeholder: '搜索笔记…',
+        placeholder: site.searchPlaceholder || '搜索…',
         noData: '没有找到相关内容',
         depth: 3,
         maxAge: 600000
