@@ -27,6 +27,8 @@
       subMaxLevel: 2,
       auto2top: true,
       coverpage: false,
+      // 每次都读取最新内容（GitHub Pages 默认让浏览器缓存 10 分钟）
+      requestHeaders: { 'cache-control': 'max-age=0' },
       search: {
         placeholder: '搜索笔记…',
         noData: '没有找到相关内容',
