@@ -425,6 +425,18 @@ body.close .content { left: 0; }
 /* 空白页 */
 .empty-page { min-height: 40vh; }
 
+/* 页面不存在 */
+.not-found { text-align: center; padding: 12vh 0 8vh; }
+.not-found .nf-icon { font-size: 44px; margin-bottom: 12px; }
+.markdown-section .not-found h1 { font-size: 1.6rem; margin: 0 0 .4em; }
+.markdown-section .not-found p { color: var(--muted); margin: 0 0 1.8em; }
+.markdown-section .not-found .nf-btn {
+  display: inline-block; padding: 9px 22px; border-radius: 999px;
+  background: var(--accent); color: #fff; text-decoration: none; font-weight: 600; font-size: 15px;
+  transition: transform .15s, box-shadow .15s;
+}
+.markdown-section .not-found .nf-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+
 /* ---------- 手机 ---------- */
 @media screen and (max-width: 768px) {
   .sidebar { left: calc(-1 * var(--side-w)); box-shadow: none; }
