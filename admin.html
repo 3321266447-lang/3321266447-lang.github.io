@@ -332,7 +332,6 @@ aside {
       <div id="settings" hidden>
         <div class="row"><h2 class="panel-title"><i data-i="sliders"></i>网站设置</h2><button id="btnCloseSettings">关闭</button></div>
         <div class="file-list" style="padding:16px;display:grid;gap:14px;max-width:560px">
-          <div><label for="sName">网站名称（显示在左上角，可留空）</label><input type="text" id="sName"></div>
           <div><label for="sTitle">浏览器标签页标题</label><input type="text" id="sTitle"></div>
           <div><label for="sColor">主题色（链接、高亮的颜色）</label>
             <div class="row"><input type="color" id="sColorPick" style="width:48px;height:38px;padding:2px"><input type="text" id="sColor" placeholder="#3b82f6"></div></div>
@@ -1253,7 +1252,6 @@ $('btnSettings').onclick = async () => {
     if (!m) throw new Error('index.html 里找不到设置区块，无法在后台修改');
     const json = m[0].replace(/^\/\* SITE_CONFIG_START \*\/\s*window\.SITE_CONFIG\s*=\s*/, '').replace(/;\s*\/\* SITE_CONFIG_END \*\/$/, '');
     siteCfg = JSON.parse(json);
-    $('sName').value = siteCfg.name || '';
     $('sTitle').value = siteCfg.title || '';
     $('sColor').value = siteCfg.themeColor || '#3b82f6';
     $('sColorPick').value = /^#[0-9a-f]{6}$/i.test($('sColor').value) ? $('sColor').value : '#3b82f6';
@@ -1268,7 +1266,9 @@ $('btnCloseSettings').onclick = () => showPanel('welcome');
 $('btnSaveSettings').onclick = async () => {
   const color = $('sColor').value.trim();
   if (color && !/^#[0-9a-f]{3,8}$/i.test(color)) { toast('主题色格式不对，应该像 #3b82f6', 'error'); return; }
-  const cfg = { ...siteCfg, name: $('sName').value.trim(), title: $('sTitle').value.trim(), themeColor: color || '#3b82f6', searchPlaceholder: $('sSearch').value.trim() };
+  // 网站名称固定为「实践笔记」，写在 index.html 里，这里不再保存
+  const cfg = { ...siteCfg, title: $('sTitle').value.trim(), themeColor: color || '#3b82f6', searchPlaceholder: $('sSearch').value.trim() };
+  delete cfg.name;
   try {
     busy('正在保存设置…');
     const html = await getText('index.html');
