@@ -30,13 +30,22 @@
       search: {
         placeholder: '搜索笔记…',
         noData: '没有找到相关内容',
-        depth: 3
+        depth: 3,
+        maxAge: 600000
       },
       pagination: {
         previousText: '上一篇',
         nextText: '下一篇',
         crossChapter: true
-      }
+      },
+      plugins: [
+        // 以 / 开头的图片按网站根目录解析（docsify 默认会拼到当前笔记所在文件夹）
+        function (hook) {
+          hook.afterEach(function (html) {
+            return html.replace(/<img src="[^"]*" data-origin="(\/(?!\/)[^"]*)"/g, '<img src="$1" data-origin="$1"');
+          });
+        }
+      ]
     };
   </script>
   <script src="https://cdn.jsdelivr.net/npm/docsify@4.13.1/lib/docsify.min.js"></script>
