@@ -1,11 +1,6 @@
 - [🏠 首页](/)
 - [✍️ 如何添加笔记](guide.md)
 
-- 📖 学习方法
-  - [概览](study/README.md)
-  - [费曼学习法](study/feynman.md)
-  - [间隔重复](study/spaced-repetition.md)
-
 - 💻 编程基础
   - [概览](coding/README.md)
   - [Python 入门](coding/python-basics.md)
