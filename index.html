@@ -60,6 +60,15 @@ window.SITE_CONFIG = {
       window.addEventListener('scroll', update, { passive: true });
       window.addEventListener('hashchange', function () { setTimeout(update, 300); });
     })();
+    // 页面不存在（比如已被删除）时，换成友好的提示
+    new MutationObserver(function () {
+      var m = document.querySelector('.markdown-section');
+      if (m && m.textContent.trim() === '404 - Not found') {
+        m.innerHTML = '<div class="not-found"><div class="nf-icon">🍃</div>'
+          + '<h1>这个页面不存在</h1><p>它可能已经被删除，或者网址输错了。</p>'
+          + '<a class="nf-btn" href="#/">回到首页</a></div>';
+      }
+    }).observe(document.body, { childList: true, subtree: true });
   </script>
   <script>
     var site = window.SITE_CONFIG || {};
