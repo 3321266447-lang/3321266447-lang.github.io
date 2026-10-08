@@ -207,9 +207,7 @@ aside {
         <li>打开 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub 新建令牌页面</a>（要先登录 <b id="ownerHint"></b>）</li>
         <li><b>Token name</b> 随便填，比如 <code>笔记后台</code>；<b>Expiration</b> 选有效期（可选 1 年）</li>
         <li><b>Repository access</b> 选 <code>Only select repositories</code>，再选 <code id="repoHint"></code></li>
-        <li>在 <b>Permissions</b> → <b>Repository permissions</b> 里：<br>
-          <code>Contents</code> 设为 <b>Read and write</b><br>
-          <code>Pages</code> 设为 <b>Read-only</b>（可选，用来显示发布进度）</li>
+        <li>在 <b>Permissions</b> 里点 <b>＋</b> 添加 <code>Contents</code>，设为 <b>Read and write</b></li>
         <li>点页面底部 <b>Generate token</b>，复制生成的 <code>github_pat_…</code> 粘贴到下面</li>
       </ol>
     </details>
@@ -469,7 +467,7 @@ async function commit(message, changes) {
   const newTree = await api(`/repos/${R}/git/trees`, { method: 'POST', body: { base_tree: base.tree.sha, tree: entries } });
   const newCommit = await api(`/repos/${R}/git/commits`, { method: 'POST', body: { message, tree: newTree.sha, parents: [baseSha] } });
   await api(`/repos/${R}/git/refs/heads/${BRANCH}`, { method: 'PATCH', body: { sha: newCommit.sha } });
-  watchPages(newCommit.sha);
+  watchPages(changes);
   return newCommit.sha;
 }
 
@@ -488,24 +486,31 @@ async function commitWithSidebar(message, changes) {
 }
 
 // ---------- 发布状态 ----------
+// 直接到网站上检查刚保存的文件是否已经是新内容
+// （GitHub 的 pages/builds 接口在 Actions 发布模式下会误报 errored，不可靠）
 let watchId = 0;
-async function watchPages(sha) {
+async function watchPages(changes) {
   const id = ++watchId;
   const el = $('pubStatus');
   el.className = ''; el.textContent = '⏳ 网站发布中…';
-  for (let i = 0; i < 40; i++) {
-    await new Promise(r => setTimeout(r, 6000));
+  const probe = changes.find(c => c.text != null && c.path !== SIDEBAR) || changes.find(c => c.text != null)
+    || changes.find(c => c.base64 != null) || changes[0];
+  if (!probe) return;
+  const url = () => SITE + probe.path.split('/').map(encodeURIComponent).join('/') + '?t=' + Date.now();
+  const norm = s => s.replace(/\r\n/g, '\n').trim();
+  for (let i = 0; i < 36; i++) {
+    await new Promise(r => setTimeout(r, 5000));
     if (id !== watchId) return;
     try {
-      const b = await api(`/repos/${R}/pages/builds/latest`);
-      if (b.commit === sha && b.status === 'built') { el.className = 'ok'; el.textContent = '✅ 网站已更新'; return; }
-      if (b.commit === sha && b.status === 'errored') { el.textContent = '⚠️ 发布失败，稍后再保存一次试试'; return; }
-    } catch (e) {
-      if (id === watchId) { el.textContent = '✅ 已保存，约 1 分钟后网站更新'; }
-      return;
-    }
+      const res = await fetch(url(), { cache: 'no-store' });
+      let live;
+      if (probe.delete) live = res.status === 404;
+      else if (probe.text != null) live = res.ok && norm(await res.text()) === norm(probe.text);
+      else live = res.ok;
+      if (live) { el.className = 'ok'; el.textContent = '✅ 网站已更新'; return; }
+    } catch {}
   }
-  if (id === watchId) el.textContent = '✅ 已保存，网站稍后更新';
+  if (id === watchId) el.textContent = '⏳ 发布比较慢，过几分钟刷新网站看看';
 }
 
 // ---------- 目录（_sidebar.md）解析 ----------
