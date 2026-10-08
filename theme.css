@@ -133,16 +133,20 @@ body {
   mask: var(--i-search) center / contain no-repeat;
 }
 .search .input-wrap:focus-within { border-color: var(--accent); }
-.search input,
-.search input:focus {
+/* 聚焦前后尺寸完全一致，且不做过渡动画（docsify 默认 transition: all 会让框缩一下） */
+.sidebar .search input,
+.sidebar .search input:focus {
   background: transparent !important;
   color: var(--text);
   font-family: var(--font);
-  font-size: 14px;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  height: 38px !important;
   padding: 9px 12px 9px 34px !important;
   border: 0 !important;
   outline: none !important;
   box-shadow: none !important;
+  transition: none !important;
 }
 .search input::placeholder { color: var(--muted); }
 .search input[type="search"]::-webkit-search-cancel-button { display: none; }
